@@ -2,13 +2,17 @@
 
 namespace App;
 
+use Laravel\Passport\HasApiTokens;
+
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable
+class CityAgent extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
+
+    protected $table = 'city_agents';
+    protected $primaryKey = 'agent_id';
 
     /**
      * The attributes that are mass assignable.
@@ -16,7 +20,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'agent_name', 'agent_email_address', 'agent_phone_number', 'password',
     ];
 
     /**
@@ -25,6 +29,12 @@ class User extends Authenticatable
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
     ];
+    public function getAuthPassword()
+    {
+      return $this->password;
+    }
 }
+
+?>

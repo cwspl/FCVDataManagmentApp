@@ -15,7 +15,7 @@ return [
 
     'defaults' => [
         'guard' => 'web',
-        'passwords' => 'users',
+        'passwords' => 'city_agents',
     ],
 
     /*
@@ -38,12 +38,11 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'city_agents',
         ],
-
         'api' => [
-            'driver' => 'token',
-            'provider' => 'users',
+            'driver' => 'passport', 
+            'provider' => 'city_agents',
         ],
     ],
 
@@ -65,9 +64,9 @@ return [
     */
 
     'providers' => [
-        'users' => [
+        'city_agents' => [
             'driver' => 'eloquent',
-            'model' => App\User::class,
+            'model' => App\CityAgent::class,
         ],
 
         // 'users' => [
@@ -92,9 +91,9 @@ return [
     */
 
     'passwords' => [
-        'users' => [
-            'provider' => 'users',
-            'table' => 'password_resets',
+        'city_agents' => [
+            'provider' => 'city_agents',
+            'table' => 'city_agents_password_resets',
             'expire' => 60,
         ],
     ],

@@ -13,21 +13,18 @@ use Illuminate\Http\Request;
 |
 */
 
-// Route::middleware('auth:api')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
-Route::post('/customer', [
-    'uses' => 'CustomersController@postCustomer'
+Route::post('/agent/signup', [
+    'uses' => 'CityAgentController@signUp'
 ]);
-Route::get('/customers', [
-    'uses' => 'CustomersController@getCustomers'
+Route::post('/agent/login', [
+    'uses' => 'CityAgentController@signIn'
 ]);
-Route::get('/customer/{customer_id}', [
-    'uses' => 'CustomersController@getCustomer'
-]);
-Route::put('/customer/{customer_id}', [
-    'uses' => 'CustomersController@putCustomer'
-]);
-Route::delete('/customer/{customer_id}', [
-    'uses' => 'CustomersController@deleteCustomer'
-]);
+Route::group(['middleware' => 'auth:api'], function(){
+    Route::get('agent/details', 'CityAgentController@getAgent');
+    Route::get('agent/logout', 'CityAgentController@logoutAgent');
+    Route::post('customer', 'CustomersController@postCustomer');
+    Route::get('customers','CustomersController@getCustomers');
+    Route::get('customer/{customer_id}', 'CustomersController@getCustomer');
+    Route::put('customer/{customer_id}', 'CustomersController@putCustomer');
+    Route::delete('customer/{customer_id}', 'CustomersController@deleteCustomer');
+});
