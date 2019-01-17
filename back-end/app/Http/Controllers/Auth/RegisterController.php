@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\User;
+use App\CityAgent;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -49,9 +49,10 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'agent_name' => ['required', 'string', 'max:255'],
+            'agent_phone_number' => ['required','min:10','max:10','unique:city_agents'],
+            'agent_email_address' => ['required', 'string', 'email', 'max:255', 'unique:city_agents'],
+            'agent_password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
     }
 
@@ -63,10 +64,12 @@ class RegisterController extends Controller
      */
     protected function create(array $data)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+        return CityAgent::create([
+            'agent_name' => $data['agent_name'],
+            'agent_email_address' => $data['agent_email_address'],
+            'agent_phone_number' => $data['agent_phone_number'],
+            'password' => Hash::make($data['agent_password']),
+            'remember_token' => str_random(10),
         ]);
     }
 }
