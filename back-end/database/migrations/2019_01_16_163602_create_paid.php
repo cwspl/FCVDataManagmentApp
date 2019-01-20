@@ -17,7 +17,9 @@ class CreatePaid extends Migration
             $table->increments('paid_id');
             $table->integer('customer_id');
             $table->integer('paid_amount');
-            $table->timestamp('paid_time_stamp');
+            $table->integer('paid_at')->nullable()->default(NULL);
+            $table->integer('paid_created_at')->nullable()->default(NULL);
+            $table->integer('paid_updated_at')->nullable()->default(NULL);
         });
     }
 

@@ -17,7 +17,8 @@ class CreateAreas extends Migration
             $table->increments('area_id');
             $table->string('area_name');
             $table->string('area_name_english');
-            $table->timestamps();
+            $table->integer('area_created_at')->nullable()->default(NULL);
+            $table->integer('area_updated_at')->nullable()->default(NULL);
         });
     }
 

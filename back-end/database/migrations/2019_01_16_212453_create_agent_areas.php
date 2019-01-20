@@ -17,7 +17,8 @@ class CreateAgentAreas extends Migration
             $table->increments('agent_area_id');
             $table->integer('agent_id');
             $table->integer('area_id');
-            $table->timestamps();
+            $table->integer('agent_area_created_at')->nullable()->default(NULL);
+            $table->integer('agent_area_updated_at')->nullable()->default(NULL);
         });
     }
 

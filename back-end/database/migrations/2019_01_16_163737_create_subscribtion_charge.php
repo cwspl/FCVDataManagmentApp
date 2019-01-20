@@ -17,8 +17,9 @@ class CreateSubscribtionCharge extends Migration
             $table->increments('charge_id');
             $table->integer('customer_id');
             $table->integer('charge_amount');
-            $table->timestamp('charge_time_stamp');
-            $table->timestamp('created_time_stamp');
+            $table->integer('charge_started_at')->nullable()->default(NULL);
+            $table->integer('charge_created_at')->nullable()->default(NULL);
+            $table->integer('charge_updated_at')->nullable()->default(NULL);
         });
     }
 

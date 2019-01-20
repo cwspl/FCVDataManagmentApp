@@ -13,14 +13,14 @@ class CityAgent extends Authenticatable
 
     protected $table = 'city_agents';
     protected $primaryKey = 'agent_id';
-
+    public $timestamps = false;
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
-        'agent_name', 'agent_email_address', 'agent_phone_number', 'password',
+        'agent_name', 'agent_email_address', 'agent_phone_number', 'password', 'agent_created_at', 'agent_updated_at'
     ];
 
     /**
