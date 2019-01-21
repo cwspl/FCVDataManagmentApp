@@ -24,7 +24,8 @@ class CityAgentController extends Controller
             'agent_email_address' => $request->input('agent_email_address'),
             'agent_phone_number'=> $request->input('agent_phone_number'),
             'password' => Hash::make($request->input('agent_password')),
-            'remember_token' => null,
+            'agent_created_at' => time(),
+            'agent_updated_at' => time(),
         ]);
         $success['token'] = $agent->createToken('FCV')->accessToken;
         $agent->save();

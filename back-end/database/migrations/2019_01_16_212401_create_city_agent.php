@@ -19,8 +19,8 @@ class CreateCityAgent extends Migration
             $table->string('agent_email_address');
             $table->string('agent_phone_number');
             $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+            $table->integer('agent_created_at')->nullable()->default(NULL);
+            $table->integer('agent_updated_at')->nullable()->default(NULL);
         });
     }
 
