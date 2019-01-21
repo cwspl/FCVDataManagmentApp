@@ -22,8 +22,16 @@ Route::post('/agent/login', [
 Route::group(['middleware' => 'auth:api'], function(){
     Route::get('agent/details', 'CityAgentController@getAgent');
     Route::get('agent/logout', 'CityAgentController@logoutAgent');
+    
+    Route::post('area','AreaController@createArea');
+    Route::get('areas','AreaController@getAreas');
+    Route::get('area/{area_id}','AreaController@getArea');
+    Route::put('area/{area_id}','AreaController@putArea');
+    Route::delete('area/{area_id}','AreaController@deleteArea');
+
     Route::post('customer', 'CustomersController@postCustomer');
     Route::get('customers','CustomersController@getCustomers');
+    Route::get('customers/{area_id}','CustomersController@getAreaCustomers');
     Route::get('customer/{customer_id}', 'CustomersController@getCustomer');
     Route::put('customer/{customer_id}', 'CustomersController@putCustomer');
     Route::delete('customer/{customer_id}', 'CustomersController@deleteCustomer');
