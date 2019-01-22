@@ -32,7 +32,13 @@ Route::group(['middleware' => 'auth:api'], function(){
     Route::post('customer', 'CustomersController@postCustomer');
     Route::get('customers','CustomersController@getCustomers');
     Route::get('customers/{area_id}','CustomersController@getAreaCustomers');
+    Route::get('customers/{area_ids}/{years}','CustomersTableController@getCustomers');
     Route::get('customer/{customer_id}', 'CustomersController@getCustomer');
     Route::put('customer/{customer_id}', 'CustomersController@putCustomer');
     Route::delete('customer/{customer_id}', 'CustomersController@deleteCustomer');
+    
+    Route::post('accountNumber/{customer_id}','AccountNumbersController@createAccountNumber');
+    Route::put('accountNumber/{account_number_id}','AccountNumbersController@editAccountNumber');
+    Route::delete('accountNumber/{account_number_id}','AccountNumbersController@deleteAccountNumber');
+
 });
