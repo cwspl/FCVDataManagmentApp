@@ -85,4 +85,66 @@ class CustomerPaymentsController extends Controller
         }
         return $result;
     }
+    public function changePayment(Request $request, $customer_id){
+        date_default_timezone_set('Asia/Kolkata');
+        $this->validate($request, [
+            'paid_amount' => 'required|integer',
+            'paid_month' => 'required|integer',
+            'paid_year' => 'required|integer',
+        ]);
+        if(AgentAreaController::hasCustomer($customer_id)){
+            $paid_time_stamp = mktime(0,0,0,$request->input('paid_month'),1,$request->input('paid_year'));
+            $paidAmount = PaidAmount::where('paid_at', $paid_time_stamp)
+                ->where('customer_id', $customer_id)
+                ->first();
+            if($paidAmount){
+                $paidAmount->paid_amount = $request->input('paid_amount');
+                $paidAmount->paid_updated_at = time();
+                $paidAmount->save();
+                return response()->json(['success' => $paidAmount], 201);
+            } else {
+                $paidAmount = new PaidAmount();
+                $paidAmount->customer_id = $customer_id;
+                $paidAmount->paid_amount = $request->input('paid_amount');
+                $paidAmount->paid_at = $paid_time_stamp;
+                $paidAmount->paid_created_at = time();
+                $paidAmount->paid_updated_at = time();
+                $paidAmount->save();
+                return response()->json(['success' => $paidAmount], 201);
+            }
+        } else {
+            return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
+        }
+    }
+    public function changeCharge(Request $request, $customer_id){
+        date_default_timezone_set('Asia/Kolkata');
+        $this->validate($request, [
+            'charge_amount' => 'required|integer',
+            'charge_month' => 'required|integer',
+            'charge_year' => 'required|integer',
+        ]);
+        if(AgentAreaController::hasCustomer($customer_id)){
+            $charge_time_stamp = mktime(0,0,0,$request->input('charge_month'),1,$request->input('charge_year'));
+            $chargeAmount = SubscriptionCharges::where('charge_started_at', $charge_time_stamp)
+                ->where('customer_id', $customer_id)
+                ->first();
+            if($chargeAmount){
+                $chargeAmount->charge_amount = $request->input('charge_amount');
+                $chargeAmount->charge_updated_at = time();
+                $chargeAmount->save();
+                return response()->json(['success' => $chargeAmount], 201);
+            } else {
+                $chargeAmount = new SubscriptionCharges();
+                $chargeAmount->customer_id = $customer_id;
+                $chargeAmount->charge_amount = $request->input('charge_amount');
+                $chargeAmount->charge_started_at = $charge_time_stamp;
+                $chargeAmount->charge_created_at = time();
+                $chargeAmount->charge_created_at = time();
+                $chargeAmount->save();
+                return response()->json(['success' => $chargeAmount], 201);
+            }
+        } else {
+            return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
+        }
+    }
 }
