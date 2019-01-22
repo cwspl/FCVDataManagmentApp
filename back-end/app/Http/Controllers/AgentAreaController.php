@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\AgentArea;
+use App\Customers;
 use Illuminate\Support\Facades\Auth; 
 
 class AgentAreaController extends Controller
@@ -45,5 +46,8 @@ class AgentAreaController extends Controller
             }
         }
         return true;
+    }
+    public static function hasCustomer($customer_id){
+        return self::hasArea(Customers::where('customer_id', $customer_id)->first()->toArray()['area_id']);
     }
 }
