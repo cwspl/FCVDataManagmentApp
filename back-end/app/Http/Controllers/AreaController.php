@@ -20,7 +20,10 @@ class AreaController extends Controller
         $area->area_updated_at = time();
         $area->save();
         if(AgentAreaController::authorizeArea($area->area_id)){
-            return response()->json(['area' => $area], 201);
+            return response()->json([
+                'message' => 'Area added',
+                'area' => $area
+            ], 201);
         } else {
             return response()->json(['message' => 'Unable to Authorize Area'], 401);
         }
@@ -28,14 +31,18 @@ class AreaController extends Controller
     public function getAreas() {
         $areas = Area::whereIn('area_id' , AgentAreaController::IDs())->orderBy('area_name_english')->get()->toArray();
         return response()->json([
+            'message' => 'Areas fetched successfully',
             'areas' => $areas
-        ], 201);
+        ], 200);
     }
     public function getArea($area_id) {
         $containsAuthorizeAreas = count(array_intersect(explode(",",$area_id), AgentAreaController::IDs())) == count(explode(",",$area_id));
         if($containsAuthorizeAreas){
             $area = Area::whereIn('area_id' , explode(",",$area_id))->get();
-            return response()->json(['area' => $area], 201);
+            return response()->json([
+                'message' => 'Area fetched successfully',
+                'area' => $area
+            ], 200);
         } else {
             return response()->json(['message' => '!! Areas not found, our Unauthorized !!'], 401);
         }
@@ -49,7 +56,10 @@ class AreaController extends Controller
             }
             $area->area_updated_at = time();
             $area->save();
-            return response()->json(['area' => $area], 201);
+            return response()->json([
+                'message' => 'Area edited successfully',
+                'area' => $area
+            ], 201);
         } else {
             return response()->json(['message' => '!! Areas not found, our Unauthorized !!'], 401);
         }
@@ -59,7 +69,9 @@ class AreaController extends Controller
         if($area){
             if(AgentAreaController::unAuthorizeArea($area_id)){
                 $area->delete();
-                return response()->json(['area' => 'Area '.$area->area_name.' Deleted'], 201);
+                return response()->json([
+                    'message' => 'Area '.$area->area_name.' Deleted'
+                ], 200);
             } else {
                 return response()->json(['message' => '!! Unable to Unauthorized '.$area->area_name.' !!'], 401);
             }

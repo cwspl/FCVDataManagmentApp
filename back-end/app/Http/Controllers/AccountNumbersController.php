@@ -25,12 +25,15 @@ class AccountNumbersController extends Controller
                 $newAccountNumber->account_created_at = time();
                 $newAccountNumber->account_updated_at = time();
                 $newAccountNumber->save();
-                return response()->json(['success' => $newAccountNumber], 201);
+                return response()->json([
+                    'message' => 'Account Number added',
+                    'account_numbers' => $newAccountNumber
+                ], 201);
             } else {
                 return response()->json(['message' => 'Customer not authorize.'], 401);
             }
         } else {
-            return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
+            return response()->json(['message' => 'Customer not found, or not authorize.'], 404);
         }
     }
     public function editAccountNumber(Request $request, $account_number_id) {
@@ -50,15 +53,18 @@ class AccountNumbersController extends Controller
                     }
                     $accountNumber->account_updated_at = time();
                     $accountNumber->save();
-                    return response()->json(['success' => $accountNumber], 201);
+                    return response()->json([
+                        'message' => 'Account Number Changed',
+                        'account_number' => $accountNumber
+                    ], 201);
                 } else {
                     return response()->json(['message' => 'Customer not authorize.'], 401);
                 }
             } else {
-                return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
+                return response()->json(['message' => 'Customer not found, or not authorize.'], 404);
             }
         } else {
-            return response()->json(['message' => 'Account number not found .'], 401);
+            return response()->json(['message' => 'Account number not found .'], 404);
         }
     }
     public function deleteAccountNumber($account_number_id) {
@@ -68,7 +74,7 @@ class AccountNumbersController extends Controller
             if($area_id){
                 if(AgentAreaController::hasArea($area_id)){
                     $accountNumber->delete();
-                    return response()->json(['success' => 'Account Deleted.'], 201);
+                    return response()->json(['message' => 'Account Deleted.'], 201);
                 } else {
                     return response()->json(['message' => 'Customer not authorize.'], 401);
                 }

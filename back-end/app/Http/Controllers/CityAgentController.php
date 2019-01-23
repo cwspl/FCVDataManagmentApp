@@ -49,10 +49,10 @@ class CityAgentController extends Controller
             return response()->json([
                 'message' => 'Login successful',
                 'success' => $success
-            ], 201);
+            ], 200);
 
         } else{ 
-            return response()->json(['error'=>'Wrong credentials'], 401); 
+            return response()->json(['error'=>'Wrong credentials'], 400); 
         } 
         
     }
@@ -61,10 +61,13 @@ class CityAgentController extends Controller
         return response()->json([
             'message' => 'Successfully logged out',
             'success' => ''
-        ], 201);
+        ], 200);
     }
     public function getAgent(){
         $agent = Auth::user(); 
-        return response()->json(['success' => $agent], 201); 
+        return response()->json([
+            'message' => 'Login Agent',
+            'agent' => $agent
+        ], 200); 
     }
 }

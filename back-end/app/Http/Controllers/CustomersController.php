@@ -20,7 +20,7 @@ class CustomersController extends Controller {
             if(AgentAreaController::hasArea($request->has('area_id'))){
                 $customer->area_id = $request->input('area_id');
             } else {
-                return response()->json(['message' => 'Not valid Area'], 401);
+                return response()->json(['message' => 'Area Unauthorized'], 401);
             }
             $customer->customer_mobile_number = $request->input('customer_mobile_number');
             if($request->has('customer_status')){
@@ -31,7 +31,10 @@ class CustomersController extends Controller {
             $customer->customer_created_at = time();
             $customer->customer_updated_at = time();
             $customer->save();
-            return response()->json(['customer' => $customer], 201);
+            return response()->json([
+                'message' => 'Customer created',
+                'customer' => $customer
+            ], 201);
     }
     public function getCustomers() {
         $customers = Customers::whereIn('area_id' , AgentAreaController::IDs())
@@ -39,7 +42,7 @@ class CustomersController extends Controller {
             ->get()->toArray();
         return response()->json([
             'customers' => $customers
-        ], 201);
+        ], 200);
     }
     public function getAreaCustomers($area_id) {
         if(AgentAreaController::hasArea($area_id)){
@@ -64,7 +67,7 @@ class CustomersController extends Controller {
             $customer['customer_payments'] = $customersPayment[$customer_id];
             return response()->json([
                 'customer' => $customer
-            ], 201);
+            ], 200);
         } else {
             return response()->json(['message' => '!! Customer not found !!'], 401);
         }
@@ -87,7 +90,10 @@ class CustomersController extends Controller {
             }
             $customer->customer_updated_at = time();
             $customer->save();
-            return response()->json(['customer' => $customer], 201);
+            return response()->json([
+                'message' => 'Customer edited successfully.',
+                'customer' => $customer
+            ], 201);
         } else {
             return response()->json(['message' => '!! Customer not found, or not authorize. !!'], 401);
         }
