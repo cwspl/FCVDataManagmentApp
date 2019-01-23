@@ -10,7 +10,7 @@ INSERT INTO `paid` ( `paid_id`, `customer_id`, `paid_amount`, `paid_at`,`paid_cr
 SELECT  `id`, `cid`, `amt`, `timc`, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
 FROM    `jama`; 
 
-INSERT INTO `subscribtion_charge` ( `charge_id`, `customer_id`, `charge_amount`, `charge_started_at`, `charge_created_at`, `charge_updated_at`)
+INSERT INTO `subscription_charges` ( `charge_id`, `customer_id`, `charge_amount`, `charge_started_at`, `charge_created_at`, `charge_updated_at`)
 SELECT  `id`, `cid`, `amt`, `timr`, `timc`, UNIX_TIMESTAMP()
 FROM    `baki`;
 
