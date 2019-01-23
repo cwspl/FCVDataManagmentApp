@@ -32,7 +32,9 @@ Route::group(['middleware' => 'auth:api'], function(){
     Route::post('customer', 'CustomersController@postCustomer');
     Route::get('customers','CustomersController@getCustomers');
     Route::get('customers/{area_id}','CustomersController@getAreaCustomers');
-    Route::get('customers/{area_ids}/{years}','CustomersTableController@getCustomers');
+    Route::get('customers/{area_ids}/{years}','CustomersTableControllerSQL@getCustomers');
+    Route::get('customers/{area_ids}/{years}/Raw','CustomersTableControllerRaw@getCustomers');
+    Route::get('customers/{area_ids}/{years}/Array','CustomersTableController@getCustomers');
     Route::get('customer/{customer_id}', 'CustomersController@getCustomer');
     Route::put('customer/{customer_id}', 'CustomersController@putCustomer');
     Route::put('customer/{customer_id}/payment', 'CustomerPaymentsController@changePayment');

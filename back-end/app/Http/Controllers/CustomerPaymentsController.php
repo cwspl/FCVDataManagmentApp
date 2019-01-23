@@ -11,6 +11,8 @@ class CustomerPaymentsController extends Controller
     public static function getPaymentsOf($customerIds, $years){
         date_default_timezone_set('Asia/Kolkata');
         $result = array();
+        $debug = array();
+        $debug['time_before_sql'] = date('H:i:s');
         $subscriptions = SubscriptionCharges::whereIn('customer_id' , $customerIds)
             ->where('charge_started_at', '<=', mktime(0,0,0,12,1,max($years)))
             ->orderBy('charge_started_at', 'desc')
@@ -18,6 +20,7 @@ class CustomerPaymentsController extends Controller
         $payments = PaidAmount::whereIn('customer_id' , $customerIds)
             ->where('paid_at', '<=', mktime(0,0,0,12,1,max($years)))
             ->get()->toArray();
+        $debug['time_after_sql'] = date('H:i:s');
         foreach ($customerIds as $customerId) {
             foreach ($years as $year) {
                 for ($month=12; $month >= 1; $month--) {
@@ -83,7 +86,8 @@ class CustomerPaymentsController extends Controller
                 }
             }
         }
-        return $result;
+        $debug['time_after_array'] = date('H:i:s');
+        return [$result,$debug];
     }
     public function changePayment(Request $request, $customer_id){
         date_default_timezone_set('Asia/Kolkata');
@@ -101,7 +105,10 @@ class CustomerPaymentsController extends Controller
                 $paidAmount->paid_amount = $request->input('paid_amount');
                 $paidAmount->paid_updated_at = time();
                 $paidAmount->save();
-                return response()->json(['success' => $paidAmount], 201);
+                return response()->json([
+                    'message' => 'Paid Amount successfully changed',
+                    'paid' => $paidAmount
+                ], 201);
             } else {
                 $paidAmount = new PaidAmount();
                 $paidAmount->customer_id = $customer_id;
@@ -110,7 +117,10 @@ class CustomerPaymentsController extends Controller
                 $paidAmount->paid_created_at = time();
                 $paidAmount->paid_updated_at = time();
                 $paidAmount->save();
-                return response()->json(['success' => $paidAmount], 201);
+                return response()->json([
+                    'message' => 'Paid Amount successfully added',
+                    'paid' => $paidAmount
+                ], 201);
             }
         } else {
             return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
@@ -132,7 +142,10 @@ class CustomerPaymentsController extends Controller
                 $chargeAmount->charge_amount = $request->input('charge_amount');
                 $chargeAmount->charge_updated_at = time();
                 $chargeAmount->save();
-                return response()->json(['success' => $chargeAmount], 201);
+                return response()->json([
+                    'message' => 'Subscription charge successfully changed',
+                    'charge' => $chargeAmount
+                ], 201);
             } else {
                 $chargeAmount = new SubscriptionCharges();
                 $chargeAmount->customer_id = $customer_id;
@@ -141,7 +154,10 @@ class CustomerPaymentsController extends Controller
                 $chargeAmount->charge_created_at = time();
                 $chargeAmount->charge_created_at = time();
                 $chargeAmount->save();
-                return response()->json(['success' => $chargeAmount], 201);
+                return response()->json([
+                    'message' => 'Subscription charge successfully changed',
+                    'charge' => $chargeAmount
+                ], 201);
             }
         } else {
             return response()->json(['message' => 'Customer not found, or not authorize.'], 401);
