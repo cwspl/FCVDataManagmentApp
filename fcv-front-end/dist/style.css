@@ -1,0 +1,14 @@
+* {
+  outline: 0 !important; }
+
+#main-header {
+  background-color: #4164f5; }
+  #main-header #header-logo {
+    width: 75px; }
+  #main-header button {
+    background-color: transparent;
+    border: 0; }
+
+body {
+  margin: 0; }
+
