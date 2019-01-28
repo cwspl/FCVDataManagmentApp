@@ -19,5 +19,4 @@ This is a data management web application of customers' subscription fees of FCV
     - @material-ui/core: 3.9.0
     - @material-ui/icons: 3.0.2
     - typeface-roboto: 0.0.54
-=======
     - Laravel/Passport
