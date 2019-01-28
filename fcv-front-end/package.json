@@ -6,14 +6,18 @@
   "scripts": {
     "start": "npm run build",
     "build": "webpack -d && webpack --watch",
+    "watch": "webpack --watch",
     "build:prod": "webpack -p"
   },
   "author": "Deep Panchal",
   "license": "MIT",
   "dependencies": {
+    "@material-ui/core": "^3.9.0",
+    "@material-ui/icons": "^3.0.2",
     "node-sass": "^4.11.0",
     "react": "^16.7.0",
-    "react-dom": "^16.7.0"
+    "react-dom": "^16.7.0",
+    "typeface-roboto": "0.0.54"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

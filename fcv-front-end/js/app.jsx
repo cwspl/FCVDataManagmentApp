@@ -1,14 +1,31 @@
-import React from "react";
+import React, { Component } from "react";
 import {render} from "react-dom";
-require('./app.scss');
+import Header from "./components/Header";
 
-class App extends React.Component{
+import {  MuiThemeProvider, createMuiTheme } from "@material-ui/core";
+import { indigo, yellow } from '@material-ui/core/colors';
+// import 'typeface-roboto';
+
+
+const theme = createMuiTheme({
+    palette: {
+        primary: indigo,
+        secondary: yellow,
+        contrastThreshold: 3,
+        tonalOffset: 0.2,
+        type: 'dark',
+    },
+    typography: {
+      useNextVariants: true,
+    },
+});
+require('./style/app.scss');
+
+class App extends Component{
     render() {
         return(
-            <div className="h1">
-                <h1>Hello World</h1>
-            </div>
+            <Header />
         ) 
     }
 }
-render(<App/>, document.querySelector('#app'));
+render(<MuiThemeProvider theme={theme}> <App /> </MuiThemeProvider>, document.querySelector('#app'));
