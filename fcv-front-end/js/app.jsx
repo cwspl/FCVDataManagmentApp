@@ -4,7 +4,7 @@ import Header from "./components/Header";
 
 import {  MuiThemeProvider, createMuiTheme } from "@material-ui/core";
 import { indigo, yellow } from '@material-ui/core/colors';
-// import 'typeface-roboto';
+
 
 
 const theme = createMuiTheme({
@@ -19,12 +19,13 @@ const theme = createMuiTheme({
       useNextVariants: true,
     },
 });
-require('./style/app.scss');
 
 class App extends Component{
     render() {
         return(
-            <Header />
+            <div>
+                <Header />
+            </div>
         ) 
     }
 }
