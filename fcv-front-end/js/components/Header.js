@@ -84,9 +84,31 @@ const styles = theme => ({
 
 function SearchAppBar(props) {
   const { classes } = props;
+  function logout(){
+      if(localStorage.getItem('loginSession')){
+        localStorage.removeItem('loginSession');
+        let postRequest = {
+          'logout': true
+        };
+        fetch('includes/authenticationBinder.php', {
+            headers: {
+                'Content-type': 'application/x-www-form-urlencoded'
+            },
+            method: 'POST',
+            body: Object.keys(postRequest).map(key => encodeURIComponent(key) + 
+            '=' + encodeURIComponent(postRequest[key])).join('&')
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if(data.logout == 'success'){
+                  props.functions.checkLogin();
+                }
+            });
+      }
+  }
   return (
     <div className={classes.root}>
-      <AppBar position="static">
+      <AppBar position="fixed">
         <Toolbar>
           <IconButton className={classes.menuButton} color="inherit" aria-label="Open drawer">
             <MenuIcon />
@@ -111,7 +133,7 @@ function SearchAppBar(props) {
               </Badge>
           </IconButton>
           <div className={classes.grow} />
-          <IconButton color="inherit" aria-label="open notification">
+          <IconButton color="inherit" aria-label="open notification" onClick={logout}>
               <MoreVertTwoToneIcon />
           </IconButton>
         </Toolbar>
