@@ -8,16 +8,19 @@
             ));
             exit();
         } else {
-            $url = $_POST['requestURL'];
-            $options = array(
-                'http' => array(
-                    'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-                    'method'  => 'POST',
-                    'content' => http_build_query($_POST)
-                )
-            );
-            $context  = stream_context_create($options);
-            $response = json_decode(file_get_contents($url, false, $context));
+            $fields = http_build_query($_POST);
+            $ch = curl_init($_POST['requestURL']);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST'); 
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                "Content-Type: application/x-www-form-urlencoded",
+                "Content-Length: ".strlen($fields),
+                "X-Requested-With: XMLHttpRequest",
+            )); 
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields); 
+            $response = json_decode(curl_exec($ch));
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
             if(isset($response->success)){
                 $_SESSION['auth'] = $response->success->token;
                 echo json_encode(array(

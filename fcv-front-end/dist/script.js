@@ -1,4 +1,705 @@
 /******/ (function(modules) { // webpackBootstrap
+/******/ 	function hotDisposeChunk(chunkId) {
+/******/ 		delete installedChunks[chunkId];
+/******/ 	}
+/******/ 	var parentHotUpdateCallback = window["webpackHotUpdate"];
+/******/ 	window["webpackHotUpdate"] = // eslint-disable-next-line no-unused-vars
+/******/ 	function webpackHotUpdateCallback(chunkId, moreModules) {
+/******/ 		hotAddUpdateChunk(chunkId, moreModules);
+/******/ 		if (parentHotUpdateCallback) parentHotUpdateCallback(chunkId, moreModules);
+/******/ 	} ;
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotDownloadUpdateChunk(chunkId) {
+/******/ 		var script = document.createElement("script");
+/******/ 		script.charset = "utf-8";
+/******/ 		script.src = __webpack_require__.p + "" + chunkId + "." + hotCurrentHash + ".hot-update.js";
+/******/ 		if (null) script.crossOrigin = null;
+/******/ 		document.head.appendChild(script);
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotDownloadManifest(requestTimeout) {
+/******/ 		requestTimeout = requestTimeout || 10000;
+/******/ 		return new Promise(function(resolve, reject) {
+/******/ 			if (typeof XMLHttpRequest === "undefined") {
+/******/ 				return reject(new Error("No browser support"));
+/******/ 			}
+/******/ 			try {
+/******/ 				var request = new XMLHttpRequest();
+/******/ 				var requestPath = __webpack_require__.p + "" + hotCurrentHash + ".hot-update.json";
+/******/ 				request.open("GET", requestPath, true);
+/******/ 				request.timeout = requestTimeout;
+/******/ 				request.send(null);
+/******/ 			} catch (err) {
+/******/ 				return reject(err);
+/******/ 			}
+/******/ 			request.onreadystatechange = function() {
+/******/ 				if (request.readyState !== 4) return;
+/******/ 				if (request.status === 0) {
+/******/ 					// timeout
+/******/ 					reject(
+/******/ 						new Error("Manifest request to " + requestPath + " timed out.")
+/******/ 					);
+/******/ 				} else if (request.status === 404) {
+/******/ 					// no update available
+/******/ 					resolve();
+/******/ 				} else if (request.status !== 200 && request.status !== 304) {
+/******/ 					// other failure
+/******/ 					reject(new Error("Manifest request to " + requestPath + " failed."));
+/******/ 				} else {
+/******/ 					// success
+/******/ 					try {
+/******/ 						var update = JSON.parse(request.responseText);
+/******/ 					} catch (e) {
+/******/ 						reject(e);
+/******/ 						return;
+/******/ 					}
+/******/ 					resolve(update);
+/******/ 				}
+/******/ 			};
+/******/ 		});
+/******/ 	}
+/******/
+/******/ 	var hotApplyOnUpdate = true;
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentHash = "b35363bc97bbaf2082ed";
+/******/ 	var hotRequestTimeout = 10000;
+/******/ 	var hotCurrentModuleData = {};
+/******/ 	var hotCurrentChildModule;
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentParents = [];
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	var hotCurrentParentsTemp = [];
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotCreateRequire(moduleId) {
+/******/ 		var me = installedModules[moduleId];
+/******/ 		if (!me) return __webpack_require__;
+/******/ 		var fn = function(request) {
+/******/ 			if (me.hot.active) {
+/******/ 				if (installedModules[request]) {
+/******/ 					if (installedModules[request].parents.indexOf(moduleId) === -1) {
+/******/ 						installedModules[request].parents.push(moduleId);
+/******/ 					}
+/******/ 				} else {
+/******/ 					hotCurrentParents = [moduleId];
+/******/ 					hotCurrentChildModule = request;
+/******/ 				}
+/******/ 				if (me.children.indexOf(request) === -1) {
+/******/ 					me.children.push(request);
+/******/ 				}
+/******/ 			} else {
+/******/ 				console.warn(
+/******/ 					"[HMR] unexpected require(" +
+/******/ 						request +
+/******/ 						") from disposed module " +
+/******/ 						moduleId
+/******/ 				);
+/******/ 				hotCurrentParents = [];
+/******/ 			}
+/******/ 			return __webpack_require__(request);
+/******/ 		};
+/******/ 		var ObjectFactory = function ObjectFactory(name) {
+/******/ 			return {
+/******/ 				configurable: true,
+/******/ 				enumerable: true,
+/******/ 				get: function() {
+/******/ 					return __webpack_require__[name];
+/******/ 				},
+/******/ 				set: function(value) {
+/******/ 					__webpack_require__[name] = value;
+/******/ 				}
+/******/ 			};
+/******/ 		};
+/******/ 		for (var name in __webpack_require__) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(__webpack_require__, name) &&
+/******/ 				name !== "e" &&
+/******/ 				name !== "t"
+/******/ 			) {
+/******/ 				Object.defineProperty(fn, name, ObjectFactory(name));
+/******/ 			}
+/******/ 		}
+/******/ 		fn.e = function(chunkId) {
+/******/ 			if (hotStatus === "ready") hotSetStatus("prepare");
+/******/ 			hotChunksLoading++;
+/******/ 			return __webpack_require__.e(chunkId).then(finishChunkLoading, function(err) {
+/******/ 				finishChunkLoading();
+/******/ 				throw err;
+/******/ 			});
+/******/
+/******/ 			function finishChunkLoading() {
+/******/ 				hotChunksLoading--;
+/******/ 				if (hotStatus === "prepare") {
+/******/ 					if (!hotWaitingFilesMap[chunkId]) {
+/******/ 						hotEnsureUpdateChunk(chunkId);
+/******/ 					}
+/******/ 					if (hotChunksLoading === 0 && hotWaitingFiles === 0) {
+/******/ 						hotUpdateDownloaded();
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 		fn.t = function(value, mode) {
+/******/ 			if (mode & 1) value = fn(value);
+/******/ 			return __webpack_require__.t(value, mode & ~1);
+/******/ 		};
+/******/ 		return fn;
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotCreateModule(moduleId) {
+/******/ 		var hot = {
+/******/ 			// private stuff
+/******/ 			_acceptedDependencies: {},
+/******/ 			_declinedDependencies: {},
+/******/ 			_selfAccepted: false,
+/******/ 			_selfDeclined: false,
+/******/ 			_disposeHandlers: [],
+/******/ 			_main: hotCurrentChildModule !== moduleId,
+/******/
+/******/ 			// Module API
+/******/ 			active: true,
+/******/ 			accept: function(dep, callback) {
+/******/ 				if (dep === undefined) hot._selfAccepted = true;
+/******/ 				else if (typeof dep === "function") hot._selfAccepted = dep;
+/******/ 				else if (typeof dep === "object")
+/******/ 					for (var i = 0; i < dep.length; i++)
+/******/ 						hot._acceptedDependencies[dep[i]] = callback || function() {};
+/******/ 				else hot._acceptedDependencies[dep] = callback || function() {};
+/******/ 			},
+/******/ 			decline: function(dep) {
+/******/ 				if (dep === undefined) hot._selfDeclined = true;
+/******/ 				else if (typeof dep === "object")
+/******/ 					for (var i = 0; i < dep.length; i++)
+/******/ 						hot._declinedDependencies[dep[i]] = true;
+/******/ 				else hot._declinedDependencies[dep] = true;
+/******/ 			},
+/******/ 			dispose: function(callback) {
+/******/ 				hot._disposeHandlers.push(callback);
+/******/ 			},
+/******/ 			addDisposeHandler: function(callback) {
+/******/ 				hot._disposeHandlers.push(callback);
+/******/ 			},
+/******/ 			removeDisposeHandler: function(callback) {
+/******/ 				var idx = hot._disposeHandlers.indexOf(callback);
+/******/ 				if (idx >= 0) hot._disposeHandlers.splice(idx, 1);
+/******/ 			},
+/******/
+/******/ 			// Management API
+/******/ 			check: hotCheck,
+/******/ 			apply: hotApply,
+/******/ 			status: function(l) {
+/******/ 				if (!l) return hotStatus;
+/******/ 				hotStatusHandlers.push(l);
+/******/ 			},
+/******/ 			addStatusHandler: function(l) {
+/******/ 				hotStatusHandlers.push(l);
+/******/ 			},
+/******/ 			removeStatusHandler: function(l) {
+/******/ 				var idx = hotStatusHandlers.indexOf(l);
+/******/ 				if (idx >= 0) hotStatusHandlers.splice(idx, 1);
+/******/ 			},
+/******/
+/******/ 			//inherit from previous dispose call
+/******/ 			data: hotCurrentModuleData[moduleId]
+/******/ 		};
+/******/ 		hotCurrentChildModule = undefined;
+/******/ 		return hot;
+/******/ 	}
+/******/
+/******/ 	var hotStatusHandlers = [];
+/******/ 	var hotStatus = "idle";
+/******/
+/******/ 	function hotSetStatus(newStatus) {
+/******/ 		hotStatus = newStatus;
+/******/ 		for (var i = 0; i < hotStatusHandlers.length; i++)
+/******/ 			hotStatusHandlers[i].call(null, newStatus);
+/******/ 	}
+/******/
+/******/ 	// while downloading
+/******/ 	var hotWaitingFiles = 0;
+/******/ 	var hotChunksLoading = 0;
+/******/ 	var hotWaitingFilesMap = {};
+/******/ 	var hotRequestedFilesMap = {};
+/******/ 	var hotAvailableFilesMap = {};
+/******/ 	var hotDeferred;
+/******/
+/******/ 	// The update info
+/******/ 	var hotUpdate, hotUpdateNewHash;
+/******/
+/******/ 	function toModuleId(id) {
+/******/ 		var isNumber = +id + "" === id;
+/******/ 		return isNumber ? +id : id;
+/******/ 	}
+/******/
+/******/ 	function hotCheck(apply) {
+/******/ 		if (hotStatus !== "idle") {
+/******/ 			throw new Error("check() is only allowed in idle status");
+/******/ 		}
+/******/ 		hotApplyOnUpdate = apply;
+/******/ 		hotSetStatus("check");
+/******/ 		return hotDownloadManifest(hotRequestTimeout).then(function(update) {
+/******/ 			if (!update) {
+/******/ 				hotSetStatus("idle");
+/******/ 				return null;
+/******/ 			}
+/******/ 			hotRequestedFilesMap = {};
+/******/ 			hotWaitingFilesMap = {};
+/******/ 			hotAvailableFilesMap = update.c;
+/******/ 			hotUpdateNewHash = update.h;
+/******/
+/******/ 			hotSetStatus("prepare");
+/******/ 			var promise = new Promise(function(resolve, reject) {
+/******/ 				hotDeferred = {
+/******/ 					resolve: resolve,
+/******/ 					reject: reject
+/******/ 				};
+/******/ 			});
+/******/ 			hotUpdate = {};
+/******/ 			var chunkId = "main";
+/******/ 			// eslint-disable-next-line no-lone-blocks
+/******/ 			{
+/******/ 				/*globals chunkId */
+/******/ 				hotEnsureUpdateChunk(chunkId);
+/******/ 			}
+/******/ 			if (
+/******/ 				hotStatus === "prepare" &&
+/******/ 				hotChunksLoading === 0 &&
+/******/ 				hotWaitingFiles === 0
+/******/ 			) {
+/******/ 				hotUpdateDownloaded();
+/******/ 			}
+/******/ 			return promise;
+/******/ 		});
+/******/ 	}
+/******/
+/******/ 	// eslint-disable-next-line no-unused-vars
+/******/ 	function hotAddUpdateChunk(chunkId, moreModules) {
+/******/ 		if (!hotAvailableFilesMap[chunkId] || !hotRequestedFilesMap[chunkId])
+/******/ 			return;
+/******/ 		hotRequestedFilesMap[chunkId] = false;
+/******/ 		for (var moduleId in moreModules) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(moreModules, moduleId)) {
+/******/ 				hotUpdate[moduleId] = moreModules[moduleId];
+/******/ 			}
+/******/ 		}
+/******/ 		if (--hotWaitingFiles === 0 && hotChunksLoading === 0) {
+/******/ 			hotUpdateDownloaded();
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotEnsureUpdateChunk(chunkId) {
+/******/ 		if (!hotAvailableFilesMap[chunkId]) {
+/******/ 			hotWaitingFilesMap[chunkId] = true;
+/******/ 		} else {
+/******/ 			hotRequestedFilesMap[chunkId] = true;
+/******/ 			hotWaitingFiles++;
+/******/ 			hotDownloadUpdateChunk(chunkId);
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotUpdateDownloaded() {
+/******/ 		hotSetStatus("ready");
+/******/ 		var deferred = hotDeferred;
+/******/ 		hotDeferred = null;
+/******/ 		if (!deferred) return;
+/******/ 		if (hotApplyOnUpdate) {
+/******/ 			// Wrap deferred object in Promise to mark it as a well-handled Promise to
+/******/ 			// avoid triggering uncaught exception warning in Chrome.
+/******/ 			// See https://bugs.chromium.org/p/chromium/issues/detail?id=465666
+/******/ 			Promise.resolve()
+/******/ 				.then(function() {
+/******/ 					return hotApply(hotApplyOnUpdate);
+/******/ 				})
+/******/ 				.then(
+/******/ 					function(result) {
+/******/ 						deferred.resolve(result);
+/******/ 					},
+/******/ 					function(err) {
+/******/ 						deferred.reject(err);
+/******/ 					}
+/******/ 				);
+/******/ 		} else {
+/******/ 			var outdatedModules = [];
+/******/ 			for (var id in hotUpdate) {
+/******/ 				if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+/******/ 					outdatedModules.push(toModuleId(id));
+/******/ 				}
+/******/ 			}
+/******/ 			deferred.resolve(outdatedModules);
+/******/ 		}
+/******/ 	}
+/******/
+/******/ 	function hotApply(options) {
+/******/ 		if (hotStatus !== "ready")
+/******/ 			throw new Error("apply() is only allowed in ready status");
+/******/ 		options = options || {};
+/******/
+/******/ 		var cb;
+/******/ 		var i;
+/******/ 		var j;
+/******/ 		var module;
+/******/ 		var moduleId;
+/******/
+/******/ 		function getAffectedStuff(updateModuleId) {
+/******/ 			var outdatedModules = [updateModuleId];
+/******/ 			var outdatedDependencies = {};
+/******/
+/******/ 			var queue = outdatedModules.slice().map(function(id) {
+/******/ 				return {
+/******/ 					chain: [id],
+/******/ 					id: id
+/******/ 				};
+/******/ 			});
+/******/ 			while (queue.length > 0) {
+/******/ 				var queueItem = queue.pop();
+/******/ 				var moduleId = queueItem.id;
+/******/ 				var chain = queueItem.chain;
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (!module || module.hot._selfAccepted) continue;
+/******/ 				if (module.hot._selfDeclined) {
+/******/ 					return {
+/******/ 						type: "self-declined",
+/******/ 						chain: chain,
+/******/ 						moduleId: moduleId
+/******/ 					};
+/******/ 				}
+/******/ 				if (module.hot._main) {
+/******/ 					return {
+/******/ 						type: "unaccepted",
+/******/ 						chain: chain,
+/******/ 						moduleId: moduleId
+/******/ 					};
+/******/ 				}
+/******/ 				for (var i = 0; i < module.parents.length; i++) {
+/******/ 					var parentId = module.parents[i];
+/******/ 					var parent = installedModules[parentId];
+/******/ 					if (!parent) continue;
+/******/ 					if (parent.hot._declinedDependencies[moduleId]) {
+/******/ 						return {
+/******/ 							type: "declined",
+/******/ 							chain: chain.concat([parentId]),
+/******/ 							moduleId: moduleId,
+/******/ 							parentId: parentId
+/******/ 						};
+/******/ 					}
+/******/ 					if (outdatedModules.indexOf(parentId) !== -1) continue;
+/******/ 					if (parent.hot._acceptedDependencies[moduleId]) {
+/******/ 						if (!outdatedDependencies[parentId])
+/******/ 							outdatedDependencies[parentId] = [];
+/******/ 						addAllToSet(outdatedDependencies[parentId], [moduleId]);
+/******/ 						continue;
+/******/ 					}
+/******/ 					delete outdatedDependencies[parentId];
+/******/ 					outdatedModules.push(parentId);
+/******/ 					queue.push({
+/******/ 						chain: chain.concat([parentId]),
+/******/ 						id: parentId
+/******/ 					});
+/******/ 				}
+/******/ 			}
+/******/
+/******/ 			return {
+/******/ 				type: "accepted",
+/******/ 				moduleId: updateModuleId,
+/******/ 				outdatedModules: outdatedModules,
+/******/ 				outdatedDependencies: outdatedDependencies
+/******/ 			};
+/******/ 		}
+/******/
+/******/ 		function addAllToSet(a, b) {
+/******/ 			for (var i = 0; i < b.length; i++) {
+/******/ 				var item = b[i];
+/******/ 				if (a.indexOf(item) === -1) a.push(item);
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// at begin all updates modules are outdated
+/******/ 		// the "outdated" status can propagate to parents if they don't accept the children
+/******/ 		var outdatedDependencies = {};
+/******/ 		var outdatedModules = [];
+/******/ 		var appliedUpdate = {};
+/******/
+/******/ 		var warnUnexpectedRequire = function warnUnexpectedRequire() {
+/******/ 			console.warn(
+/******/ 				"[HMR] unexpected require(" + result.moduleId + ") to disposed module"
+/******/ 			);
+/******/ 		};
+/******/
+/******/ 		for (var id in hotUpdate) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(hotUpdate, id)) {
+/******/ 				moduleId = toModuleId(id);
+/******/ 				/** @type {TODO} */
+/******/ 				var result;
+/******/ 				if (hotUpdate[id]) {
+/******/ 					result = getAffectedStuff(moduleId);
+/******/ 				} else {
+/******/ 					result = {
+/******/ 						type: "disposed",
+/******/ 						moduleId: id
+/******/ 					};
+/******/ 				}
+/******/ 				/** @type {Error|false} */
+/******/ 				var abortError = false;
+/******/ 				var doApply = false;
+/******/ 				var doDispose = false;
+/******/ 				var chainInfo = "";
+/******/ 				if (result.chain) {
+/******/ 					chainInfo = "\nUpdate propagation: " + result.chain.join(" -> ");
+/******/ 				}
+/******/ 				switch (result.type) {
+/******/ 					case "self-declined":
+/******/ 						if (options.onDeclined) options.onDeclined(result);
+/******/ 						if (!options.ignoreDeclined)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because of self decline: " +
+/******/ 									result.moduleId +
+/******/ 									chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "declined":
+/******/ 						if (options.onDeclined) options.onDeclined(result);
+/******/ 						if (!options.ignoreDeclined)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because of declined dependency: " +
+/******/ 									result.moduleId +
+/******/ 									" in " +
+/******/ 									result.parentId +
+/******/ 									chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "unaccepted":
+/******/ 						if (options.onUnaccepted) options.onUnaccepted(result);
+/******/ 						if (!options.ignoreUnaccepted)
+/******/ 							abortError = new Error(
+/******/ 								"Aborted because " + moduleId + " is not accepted" + chainInfo
+/******/ 							);
+/******/ 						break;
+/******/ 					case "accepted":
+/******/ 						if (options.onAccepted) options.onAccepted(result);
+/******/ 						doApply = true;
+/******/ 						break;
+/******/ 					case "disposed":
+/******/ 						if (options.onDisposed) options.onDisposed(result);
+/******/ 						doDispose = true;
+/******/ 						break;
+/******/ 					default:
+/******/ 						throw new Error("Unexception type " + result.type);
+/******/ 				}
+/******/ 				if (abortError) {
+/******/ 					hotSetStatus("abort");
+/******/ 					return Promise.reject(abortError);
+/******/ 				}
+/******/ 				if (doApply) {
+/******/ 					appliedUpdate[moduleId] = hotUpdate[moduleId];
+/******/ 					addAllToSet(outdatedModules, result.outdatedModules);
+/******/ 					for (moduleId in result.outdatedDependencies) {
+/******/ 						if (
+/******/ 							Object.prototype.hasOwnProperty.call(
+/******/ 								result.outdatedDependencies,
+/******/ 								moduleId
+/******/ 							)
+/******/ 						) {
+/******/ 							if (!outdatedDependencies[moduleId])
+/******/ 								outdatedDependencies[moduleId] = [];
+/******/ 							addAllToSet(
+/******/ 								outdatedDependencies[moduleId],
+/******/ 								result.outdatedDependencies[moduleId]
+/******/ 							);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 				if (doDispose) {
+/******/ 					addAllToSet(outdatedModules, [result.moduleId]);
+/******/ 					appliedUpdate[moduleId] = warnUnexpectedRequire;
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Store self accepted outdated modules to require them later by the module system
+/******/ 		var outdatedSelfAcceptedModules = [];
+/******/ 		for (i = 0; i < outdatedModules.length; i++) {
+/******/ 			moduleId = outdatedModules[i];
+/******/ 			if (
+/******/ 				installedModules[moduleId] &&
+/******/ 				installedModules[moduleId].hot._selfAccepted
+/******/ 			)
+/******/ 				outdatedSelfAcceptedModules.push({
+/******/ 					module: moduleId,
+/******/ 					errorHandler: installedModules[moduleId].hot._selfAccepted
+/******/ 				});
+/******/ 		}
+/******/
+/******/ 		// Now in "dispose" phase
+/******/ 		hotSetStatus("dispose");
+/******/ 		Object.keys(hotAvailableFilesMap).forEach(function(chunkId) {
+/******/ 			if (hotAvailableFilesMap[chunkId] === false) {
+/******/ 				hotDisposeChunk(chunkId);
+/******/ 			}
+/******/ 		});
+/******/
+/******/ 		var idx;
+/******/ 		var queue = outdatedModules.slice();
+/******/ 		while (queue.length > 0) {
+/******/ 			moduleId = queue.pop();
+/******/ 			module = installedModules[moduleId];
+/******/ 			if (!module) continue;
+/******/
+/******/ 			var data = {};
+/******/
+/******/ 			// Call dispose handlers
+/******/ 			var disposeHandlers = module.hot._disposeHandlers;
+/******/ 			for (j = 0; j < disposeHandlers.length; j++) {
+/******/ 				cb = disposeHandlers[j];
+/******/ 				cb(data);
+/******/ 			}
+/******/ 			hotCurrentModuleData[moduleId] = data;
+/******/
+/******/ 			// disable module (this disables requires from this module)
+/******/ 			module.hot.active = false;
+/******/
+/******/ 			// remove module from cache
+/******/ 			delete installedModules[moduleId];
+/******/
+/******/ 			// when disposing there is no need to call dispose handler
+/******/ 			delete outdatedDependencies[moduleId];
+/******/
+/******/ 			// remove "parents" references from all children
+/******/ 			for (j = 0; j < module.children.length; j++) {
+/******/ 				var child = installedModules[module.children[j]];
+/******/ 				if (!child) continue;
+/******/ 				idx = child.parents.indexOf(moduleId);
+/******/ 				if (idx >= 0) {
+/******/ 					child.parents.splice(idx, 1);
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// remove outdated dependency from module children
+/******/ 		var dependency;
+/******/ 		var moduleOutdatedDependencies;
+/******/ 		for (moduleId in outdatedDependencies) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)
+/******/ 			) {
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (module) {
+/******/ 					moduleOutdatedDependencies = outdatedDependencies[moduleId];
+/******/ 					for (j = 0; j < moduleOutdatedDependencies.length; j++) {
+/******/ 						dependency = moduleOutdatedDependencies[j];
+/******/ 						idx = module.children.indexOf(dependency);
+/******/ 						if (idx >= 0) module.children.splice(idx, 1);
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Not in "apply" phase
+/******/ 		hotSetStatus("apply");
+/******/
+/******/ 		hotCurrentHash = hotUpdateNewHash;
+/******/
+/******/ 		// insert new code
+/******/ 		for (moduleId in appliedUpdate) {
+/******/ 			if (Object.prototype.hasOwnProperty.call(appliedUpdate, moduleId)) {
+/******/ 				modules[moduleId] = appliedUpdate[moduleId];
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// call accept handlers
+/******/ 		var error = null;
+/******/ 		for (moduleId in outdatedDependencies) {
+/******/ 			if (
+/******/ 				Object.prototype.hasOwnProperty.call(outdatedDependencies, moduleId)
+/******/ 			) {
+/******/ 				module = installedModules[moduleId];
+/******/ 				if (module) {
+/******/ 					moduleOutdatedDependencies = outdatedDependencies[moduleId];
+/******/ 					var callbacks = [];
+/******/ 					for (i = 0; i < moduleOutdatedDependencies.length; i++) {
+/******/ 						dependency = moduleOutdatedDependencies[i];
+/******/ 						cb = module.hot._acceptedDependencies[dependency];
+/******/ 						if (cb) {
+/******/ 							if (callbacks.indexOf(cb) !== -1) continue;
+/******/ 							callbacks.push(cb);
+/******/ 						}
+/******/ 					}
+/******/ 					for (i = 0; i < callbacks.length; i++) {
+/******/ 						cb = callbacks[i];
+/******/ 						try {
+/******/ 							cb(moduleOutdatedDependencies);
+/******/ 						} catch (err) {
+/******/ 							if (options.onErrored) {
+/******/ 								options.onErrored({
+/******/ 									type: "accept-errored",
+/******/ 									moduleId: moduleId,
+/******/ 									dependencyId: moduleOutdatedDependencies[i],
+/******/ 									error: err
+/******/ 								});
+/******/ 							}
+/******/ 							if (!options.ignoreErrored) {
+/******/ 								if (!error) error = err;
+/******/ 							}
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// Load self accepted modules
+/******/ 		for (i = 0; i < outdatedSelfAcceptedModules.length; i++) {
+/******/ 			var item = outdatedSelfAcceptedModules[i];
+/******/ 			moduleId = item.module;
+/******/ 			hotCurrentParents = [moduleId];
+/******/ 			try {
+/******/ 				__webpack_require__(moduleId);
+/******/ 			} catch (err) {
+/******/ 				if (typeof item.errorHandler === "function") {
+/******/ 					try {
+/******/ 						item.errorHandler(err);
+/******/ 					} catch (err2) {
+/******/ 						if (options.onErrored) {
+/******/ 							options.onErrored({
+/******/ 								type: "self-accept-error-handler-errored",
+/******/ 								moduleId: moduleId,
+/******/ 								error: err2,
+/******/ 								originalError: err
+/******/ 							});
+/******/ 						}
+/******/ 						if (!options.ignoreErrored) {
+/******/ 							if (!error) error = err2;
+/******/ 						}
+/******/ 						if (!error) error = err;
+/******/ 					}
+/******/ 				} else {
+/******/ 					if (options.onErrored) {
+/******/ 						options.onErrored({
+/******/ 							type: "self-accept-errored",
+/******/ 							moduleId: moduleId,
+/******/ 							error: err
+/******/ 						});
+/******/ 					}
+/******/ 					if (!options.ignoreErrored) {
+/******/ 						if (!error) error = err;
+/******/ 					}
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/
+/******/ 		// handle errors in accept handlers and self accepted module load
+/******/ 		if (error) {
+/******/ 			hotSetStatus("fail");
+/******/ 			return Promise.reject(error);
+/******/ 		}
+/******/
+/******/ 		hotSetStatus("idle");
+/******/ 		return new Promise(function(resolve) {
+/******/ 			resolve(outdatedModules);
+/******/ 		});
+/******/ 	}
+/******/
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -13,11 +714,14 @@
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
 /******/ 			l: false,
-/******/ 			exports: {}
+/******/ 			exports: {},
+/******/ 			hot: hotCreateModule(moduleId),
+/******/ 			parents: (hotCurrentParentsTemp = hotCurrentParents, hotCurrentParents = [], hotCurrentParentsTemp),
+/******/ 			children: []
 /******/ 		};
 /******/
 /******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, hotCreateRequire(moduleId));
 /******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.l = true;
@@ -79,9 +783,12 @@
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
 /******/
+/******/ 	// __webpack_hash__
+/******/ 	__webpack_require__.h = function() { return hotCurrentHash; };
+/******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./js/app.jsx");
+/******/ 	return hotCreateRequire("./js/app.jsx")(__webpack_require__.s = "./js/app.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -94,7 +801,7 @@
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ \"./node_modules/react/index.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ \"./node_modules/react-dom/index.js\");\n/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _components_Header__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./components/Header */ \"./js/components/Header.js\");\n/* harmony import */ var _material_ui_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core */ \"./node_modules/@material-ui/core/index.es.js\");\n/* harmony import */ var _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material-ui/core/colors */ \"./node_modules/@material-ui/core/colors/index.js\");\n/* harmony import */ var _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var _components_login__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./components/login */ \"./js/components/login.js\");\n\n\n\n\n\n\nconst theme = Object(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"createMuiTheme\"])({\n  palette: {\n    primary: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"indigo\"],\n    secondary: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"yellow\"],\n    error: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"red\"],\n    contrastThreshold: 3,\n    tonalOffset: 0.2\n  },\n  typography: {\n    useNextVariants: true\n  },\n  status: {\n    default: {\n      white: 'rgb(255,255,255)',\n      black: 'rgb(0,0,0)'\n    },\n    success: {\n      light: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"green\"][300],\n      main: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"green\"][600],\n      dark: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_4__[\"green\"][700],\n      contrastText: 'rgb(255,255,255)'\n    }\n  }\n});\n\nclass App extends react__WEBPACK_IMPORTED_MODULE_0__[\"Component\"] {\n  constructor(props) {\n    super(props);\n    this.state = {\n      main: '',\n      requestURL: 'http://127.0.0.1:8000/api/'\n    };\n  }\n\n  componentDidMount() {\n    this.checkLogin();\n  }\n\n  componentDidMount() {\n    this.checkLogin();\n  }\n\n  checkLogin() {\n    let that = this;\n\n    if (localStorage.getItem('loginSession')) {\n      let postRequest = {\n        'checkToken': localStorage.getItem('loginSession')\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        if (data.login == 'success') {\n          localStorage.setItem('loginSession', data.token);\n          that.setState({\n            main: react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_components_Header__WEBPACK_IMPORTED_MODULE_2__[\"default\"], {\n              functions: that\n            })\n          });\n        } else {\n          that.setState({\n            main: react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_components_login__WEBPACK_IMPORTED_MODULE_5__[\"default\"], {\n              functions: that\n            })\n          });\n        }\n      });\n    } else {\n      this.setState({\n        main: react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_components_login__WEBPACK_IMPORTED_MODULE_5__[\"default\"], {\n          functions: that\n        })\n      });\n    }\n  }\n\n  render() {\n    return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", null, this.state.main);\n  }\n\n}\n\nObject(react_dom__WEBPACK_IMPORTED_MODULE_1__[\"render\"])(react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"MuiThemeProvider\"], {\n  theme: theme\n}, \" \", react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(App, null), \" \"), document.querySelector('#app'));\n\n//# sourceURL=webpack:///./js/app.jsx?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(function(React) {/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-dom */ \"./node_modules/react-dom/index.js\");\n/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _components_Header__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/Header */ \"./js/components/Header.js\");\n/* harmony import */ var _material_ui_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material-ui/core */ \"./node_modules/@material-ui/core/index.es.js\");\n/* harmony import */ var _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core/colors */ \"./node_modules/@material-ui/core/colors/index.js\");\n/* harmony import */ var _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var _components_login__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./components/login */ \"./js/components/login.js\");\n\n\n\n\n\nconst theme = Object(_material_ui_core__WEBPACK_IMPORTED_MODULE_2__[\"createMuiTheme\"])({\n  palette: {\n    primary: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"indigo\"],\n    secondary: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"yellow\"],\n    error: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"red\"],\n    contrastThreshold: 3,\n    tonalOffset: 0.2\n  },\n  typography: {\n    useNextVariants: true\n  },\n  status: {\n    default: {\n      white: 'rgb(255,255,255)',\n      black: 'rgb(0,0,0)'\n    },\n    success: {\n      light: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"green\"][300],\n      main: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"green\"][600],\n      dark: _material_ui_core_colors__WEBPACK_IMPORTED_MODULE_3__[\"green\"][700],\n      contrastText: 'rgb(255,255,255)'\n    }\n  }\n});\n\nclass App extends React.Component {\n  constructor(props) {\n    super(props);\n    this.state = {\n      main: '',\n      requestURL: 'http://127.0.0.1:8000/api/'\n    };\n  }\n\n  componentDidMount() {\n    this.checkLogin();\n  }\n\n  componentDidMount() {\n    this.checkLogin();\n  }\n\n  checkLogin() {\n    let that = this;\n\n    if (localStorage.getItem('loginSession')) {\n      let postRequest = {\n        'checkToken': localStorage.getItem('loginSession')\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        if (data.login == 'success') {\n          localStorage.setItem('loginSession', data.token);\n          that.setState({\n            main: React.createElement(_components_Header__WEBPACK_IMPORTED_MODULE_1__[\"default\"], {\n              functions: that\n            })\n          });\n        } else {\n          that.setState({\n            main: React.createElement(_components_login__WEBPACK_IMPORTED_MODULE_4__[\"default\"], {\n              functions: that\n            })\n          });\n        }\n      });\n    } else {\n      this.setState({\n        main: React.createElement(_components_login__WEBPACK_IMPORTED_MODULE_4__[\"default\"], {\n          functions: that\n        })\n      });\n    }\n  }\n\n  render() {\n    return React.createElement(\"div\", null, this.state.main);\n  }\n\n}\n\nObject(react_dom__WEBPACK_IMPORTED_MODULE_0__[\"render\"])(React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_2__[\"MuiThemeProvider\"], {\n  theme: theme\n}, \" \", React.createElement(App, null), \" \"), document.querySelector('#app'));\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! react */ \"./node_modules/react/index.js\")))\n\n//# sourceURL=webpack:///./js/app.jsx?");
 
 /***/ }),
 
@@ -106,7 +813,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var reac
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ \"./node_modules/react/index.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! prop-types */ \"./node_modules/prop-types/index.js\");\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material-ui/core/AppBar */ \"./node_modules/@material-ui/core/AppBar/index.js\");\n/* harmony import */ var _material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core/Toolbar */ \"./node_modules/@material-ui/core/Toolbar/index.js\");\n/* harmony import */ var _material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var _material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material-ui/core/IconButton */ \"./node_modules/@material-ui/core/IconButton/index.js\");\n/* harmony import */ var _material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var _material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material-ui/core/InputBase */ \"./node_modules/@material-ui/core/InputBase/index.js\");\n/* harmony import */ var _material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var _material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material-ui/core/Badge */ \"./node_modules/@material-ui/core/Badge/index.js\");\n/* harmony import */ var _material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var _material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @material-ui/core/styles/colorManipulator */ \"./node_modules/@material-ui/core/styles/colorManipulator.js\");\n/* harmony import */ var _material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @material-ui/core/styles */ \"./node_modules/@material-ui/core/styles/index.js\");\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var _material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @material-ui/icons/Menu */ \"./node_modules/@material-ui/icons/Menu.js\");\n/* harmony import */ var _material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var _material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @material-ui/icons/Notifications */ \"./node_modules/@material-ui/icons/Notifications.js\");\n/* harmony import */ var _material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var _material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @material-ui/icons/Search */ \"./node_modules/@material-ui/icons/Search.js\");\n/* harmony import */ var _material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_11__);\n/* harmony import */ var _material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! @material-ui/icons/MoreVertTwoTone */ \"./node_modules/@material-ui/icons/MoreVertTwoTone.js\");\n/* harmony import */ var _material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_12__);\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nconst styles = theme => ({\n  root: {\n    width: '100%'\n  },\n  grow: {\n    flexGrow: 1\n  },\n  menuButton: {\n    marginLeft: -12,\n    marginRight: 20\n  },\n  logo: {\n    width: '75px',\n    marginRight: '25px'\n  },\n  logoHide: {\n    display: 'none'\n  },\n  search: {\n    position: 'relative',\n    borderRadius: theme.shape.borderRadius,\n    backgroundColor: Object(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_7__[\"fade\"])(theme.palette.common.white, 0.15),\n    '&:hover': {\n      backgroundColor: Object(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_7__[\"fade\"])(theme.palette.common.white, 0.25)\n    },\n    marginLeft: 0,\n    width: 'auto',\n    [theme.breakpoints.up('sm')]: {\n      marginLeft: theme.spacing.unit,\n      width: 'auto'\n    }\n  },\n  searchIcon: {\n    width: theme.spacing.unit * 9,\n    height: '100%',\n    position: 'absolute',\n    pointerEvents: 'none',\n    display: 'flex',\n    alignItems: 'center',\n    justifyContent: 'center'\n  },\n  inputRoot: {\n    color: 'inherit',\n    width: '100%'\n  },\n  inputInput: {\n    paddingTop: theme.spacing.unit,\n    paddingRight: theme.spacing.unit,\n    paddingBottom: theme.spacing.unit,\n    paddingLeft: theme.spacing.unit * 10,\n    transition: theme.transitions.create('width'),\n    width: '0',\n    '&:focus': {\n      width: 150\n    },\n    [theme.breakpoints.up('sm')]: {\n      width: 200,\n      '&:focus': {\n        width: 250\n      }\n    },\n    [theme.breakpoints.up('md')]: {\n      width: 450,\n      '&:focus': {\n        width: 600\n      }\n    }\n  }\n});\n\nfunction SearchAppBar(props) {\n  const {\n    classes\n  } = props;\n\n  function logout() {\n    if (localStorage.getItem('loginSession')) {\n      localStorage.removeItem('loginSession');\n      let postRequest = {\n        'logout': true\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        if (data.logout == 'success') {\n          props.functions.checkLogin();\n        }\n      });\n    }\n  }\n\n  return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.root\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_2___default.a, {\n    position: \"fixed\"\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_3___default.a, null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4___default.a, {\n    className: classes.menuButton,\n    color: \"inherit\",\n    \"aria-label\": \"Open drawer\"\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_9___default.a, null)), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.grow\n  }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"img\", {\n    src: \"images/header_logo.svg\",\n    className: classes.logo\n  }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.search\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.searchIcon\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_11___default.a, null)), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_5___default.a, {\n    placeholder: \"Search Customers\",\n    classes: {\n      root: classes.inputRoot,\n      input: classes.inputInput\n    }\n  })), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4___default.a, {\n    color: \"inherit\",\n    \"aria-label\": \"open notification\"\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_6___default.a, {\n    badgeContent: 17,\n    color: \"secondary\"\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_10___default.a, null))), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.grow\n  }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_4___default.a, {\n    color: \"inherit\",\n    \"aria-label\": \"open notification\",\n    onClick: logout\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_12___default.a, null)))));\n}\n\nSearchAppBar.propTypes = {\n  classes: prop_types__WEBPACK_IMPORTED_MODULE_1___default.a.object.isRequired\n};\n/* harmony default export */ __webpack_exports__[\"default\"] = (Object(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_8__[\"withStyles\"])(styles)(SearchAppBar));\n\n//# sourceURL=webpack:///./js/components/Header.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(function(React) {/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! prop-types */ \"./node_modules/prop-types/index.js\");\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material-ui/core/AppBar */ \"./node_modules/@material-ui/core/AppBar/index.js\");\n/* harmony import */ var _material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material-ui/core/Toolbar */ \"./node_modules/@material-ui/core/Toolbar/index.js\");\n/* harmony import */ var _material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core/IconButton */ \"./node_modules/@material-ui/core/IconButton/index.js\");\n/* harmony import */ var _material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var _material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material-ui/core/InputBase */ \"./node_modules/@material-ui/core/InputBase/index.js\");\n/* harmony import */ var _material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var _material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material-ui/core/Badge */ \"./node_modules/@material-ui/core/Badge/index.js\");\n/* harmony import */ var _material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var _material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material-ui/core/styles/colorManipulator */ \"./node_modules/@material-ui/core/styles/colorManipulator.js\");\n/* harmony import */ var _material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @material-ui/core/styles */ \"./node_modules/@material-ui/core/styles/index.js\");\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var _material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @material-ui/icons/Menu */ \"./node_modules/@material-ui/icons/Menu.js\");\n/* harmony import */ var _material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var _material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @material-ui/icons/Notifications */ \"./node_modules/@material-ui/icons/Notifications.js\");\n/* harmony import */ var _material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var _material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @material-ui/icons/Search */ \"./node_modules/@material-ui/icons/Search.js\");\n/* harmony import */ var _material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var _material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @material-ui/icons/MoreVertTwoTone */ \"./node_modules/@material-ui/icons/MoreVertTwoTone.js\");\n/* harmony import */ var _material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_11__);\n\n\n\n\n\n\n\n\n\n\n\n\n\nconst styles = theme => ({\n  root: {\n    width: '100%'\n  },\n  grow: {\n    flexGrow: 1\n  },\n  menuButton: {\n    marginLeft: -12,\n    marginRight: 20\n  },\n  logo: {\n    width: '75px',\n    marginRight: '25px'\n  },\n  logoHide: {\n    display: 'none'\n  },\n  search: {\n    position: 'relative',\n    borderRadius: theme.shape.borderRadius,\n    backgroundColor: Object(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_6__[\"fade\"])(theme.palette.common.white, 0.15),\n    '&:hover': {\n      backgroundColor: Object(_material_ui_core_styles_colorManipulator__WEBPACK_IMPORTED_MODULE_6__[\"fade\"])(theme.palette.common.white, 0.25)\n    },\n    marginLeft: 0,\n    width: 'auto',\n    [theme.breakpoints.up('sm')]: {\n      marginLeft: theme.spacing.unit,\n      width: 'auto'\n    }\n  },\n  searchIcon: {\n    width: theme.spacing.unit * 9,\n    height: '100%',\n    position: 'absolute',\n    pointerEvents: 'none',\n    display: 'flex',\n    alignItems: 'center',\n    justifyContent: 'center'\n  },\n  inputRoot: {\n    color: 'inherit',\n    width: '100%'\n  },\n  inputInput: {\n    paddingTop: theme.spacing.unit,\n    paddingRight: theme.spacing.unit,\n    paddingBottom: theme.spacing.unit,\n    paddingLeft: theme.spacing.unit * 10,\n    transition: theme.transitions.create('width'),\n    width: '0',\n    '&:focus': {\n      width: 150\n    },\n    [theme.breakpoints.up('sm')]: {\n      width: 200,\n      '&:focus': {\n        width: 250\n      }\n    },\n    [theme.breakpoints.up('md')]: {\n      width: 450,\n      '&:focus': {\n        width: 600\n      }\n    }\n  }\n});\n\nfunction SearchAppBar(props) {\n  const {\n    classes\n  } = props;\n\n  function logout() {\n    if (localStorage.getItem('loginSession')) {\n      localStorage.removeItem('loginSession');\n      let postRequest = {\n        'logout': true\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        if (data.logout == 'success') {\n          props.functions.checkLogin();\n        }\n      });\n    }\n  }\n\n  return React.createElement(\"div\", {\n    className: classes.root\n  }, React.createElement(_material_ui_core_AppBar__WEBPACK_IMPORTED_MODULE_1___default.a, {\n    position: \"fixed\"\n  }, React.createElement(_material_ui_core_Toolbar__WEBPACK_IMPORTED_MODULE_2___default.a, null, React.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3___default.a, {\n    className: classes.menuButton,\n    color: \"inherit\",\n    \"aria-label\": \"Open drawer\"\n  }, React.createElement(_material_ui_icons_Menu__WEBPACK_IMPORTED_MODULE_8___default.a, null)), React.createElement(\"div\", {\n    className: classes.grow\n  }), React.createElement(\"img\", {\n    src: \"images/header_logo.svg\",\n    className: classes.logo\n  }), React.createElement(\"div\", {\n    className: classes.search\n  }, React.createElement(\"div\", {\n    className: classes.searchIcon\n  }, React.createElement(_material_ui_icons_Search__WEBPACK_IMPORTED_MODULE_10___default.a, null)), React.createElement(_material_ui_core_InputBase__WEBPACK_IMPORTED_MODULE_4___default.a, {\n    placeholder: \"Search Customers\",\n    classes: {\n      root: classes.inputRoot,\n      input: classes.inputInput\n    }\n  })), React.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3___default.a, {\n    color: \"inherit\",\n    \"aria-label\": \"open notification\"\n  }, React.createElement(_material_ui_core_Badge__WEBPACK_IMPORTED_MODULE_5___default.a, {\n    badgeContent: 17,\n    color: \"secondary\"\n  }, React.createElement(_material_ui_icons_Notifications__WEBPACK_IMPORTED_MODULE_9___default.a, null))), React.createElement(\"div\", {\n    className: classes.grow\n  }), React.createElement(_material_ui_core_IconButton__WEBPACK_IMPORTED_MODULE_3___default.a, {\n    color: \"inherit\",\n    \"aria-label\": \"open notification\",\n    onClick: logout\n  }, React.createElement(_material_ui_icons_MoreVertTwoTone__WEBPACK_IMPORTED_MODULE_11___default.a, null)))));\n}\n\nSearchAppBar.propTypes = {\n  classes: prop_types__WEBPACK_IMPORTED_MODULE_0___default.a.object.isRequired\n};\n/* harmony default export */ __webpack_exports__[\"default\"] = (Object(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_7__[\"withStyles\"])(styles)(SearchAppBar));\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! react */ \"./node_modules/react/index.js\")))\n\n//# sourceURL=webpack:///./js/components/Header.js?");
 
 /***/ }),
 
@@ -118,7 +825,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var reac
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ \"./node_modules/react/index.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! classnames */ \"./node_modules/classnames/index.js\");\n/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! prop-types */ \"./node_modules/prop-types/index.js\");\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core/styles */ \"./node_modules/@material-ui/core/styles/index.js\");\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var _material_ui_core__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material-ui/core */ \"./node_modules/@material-ui/core/index.es.js\");\n/* harmony import */ var _material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material-ui/icons/Check */ \"./node_modules/@material-ui/icons/Check.js\");\n/* harmony import */ var _material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var _material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material-ui/icons/Refresh */ \"./node_modules/@material-ui/icons/Refresh.js\");\n/* harmony import */ var _material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var _material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @material-ui/icons/ArrowForwardIos */ \"./node_modules/@material-ui/icons/ArrowForwardIos.js\");\n/* harmony import */ var _material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_7__);\n\n\n\n\n\n\n\n\n\nconst styles = theme => ({\n  background: {\n    backgroundColor: theme.palette.primary.main,\n    display: 'flex',\n    width: '100%',\n    height: '100vh',\n    justifyContent: 'center',\n    alignItems: 'center',\n    [theme.breakpoints.up('sm')]: {\n      backgroundColor: theme.palette.primary.dark\n    }\n  },\n  formText: {\n    color: theme.palette.primary.contrastText,\n    fontSize: 24,\n    padding: 20\n  },\n  form: {\n    color: '#ffffff !important',\n    maxWidth: '400px',\n    width: '100%',\n    backgroundColor: theme.palette.primary.main,\n    padding: '20px',\n    position: 'relative',\n    borderRadius: theme.shape.borderRadius,\n    [theme.breakpoints.up('sm')]: {\n      backgroundColor: theme.palette.primary.main\n    }\n  },\n  flexCenter: {\n    position: 'relative',\n    display: 'flex',\n    flexDirection: 'column',\n    justifyContent: 'center',\n    alignItems: 'center'\n  },\n  wrapper: {\n    margin: theme.spacing.unit,\n    position: 'relative'\n  },\n  buttonSuccess: {\n    backgroundColor: theme.status.success.main,\n    color: theme.status.success.contrastText,\n    '&:hover': {\n      backgroundColor: theme.status.success.dark\n    }\n  },\n  buttonError: {\n    backgroundColor: theme.palette.error.main,\n    color: theme.palette.error.contrastText,\n    '&:hover': {\n      backgroundColor: theme.palette.error.dark\n    }\n  },\n  fabProgress: {\n    color: theme.palette.secondary.dark,\n    position: 'absolute',\n    top: -6,\n    left: -6,\n    zIndex: 1\n  },\n  loginButton: {\n    margin: theme.spacing.unit,\n    marginTop: \"-25px\",\n    position: 'relative'\n  }\n});\n\nfunction LoginForm(props) {\n  const {\n    classes\n  } = props;\n  const requestURL = props.functions.state.requestURL;\n  const [loading, setLoading] = Object(react__WEBPACK_IMPORTED_MODULE_0__[\"useState\"])(false);\n  const [success, setSuccess] = Object(react__WEBPACK_IMPORTED_MODULE_0__[\"useState\"])(false);\n  const [error, setError] = Object(react__WEBPACK_IMPORTED_MODULE_0__[\"useState\"])(false);\n  const [email, setEmail] = Object(react__WEBPACK_IMPORTED_MODULE_0__[\"useState\"])('');\n  const [password, setPassword] = Object(react__WEBPACK_IMPORTED_MODULE_0__[\"useState\"])('');\n  const buttonClassname = classnames__WEBPACK_IMPORTED_MODULE_1___default()({\n    [classes.buttonSuccess]: success,\n    [classes.buttonError]: error\n  });\n\n  function login() {\n    if (!loading) {\n      setSuccess(false);\n      setError(false);\n      setLoading(true);\n      let postRequest = {\n        'requestURL': requestURL + 'agent/login',\n        'login': true,\n        \"agent_email_address\": email,\n        \"agent_password\": password\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        setLoading(false);\n\n        if (data.login == 'success') {\n          setSuccess(true);\n          localStorage.setItem('loginSession', data.token);\n          props.functions.checkLogin();\n        } else {\n          console.log(data);\n          setError(true);\n        }\n      });\n    }\n  }\n\n  return react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.background\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"Card\"], {\n    className: classes.form\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"CardContent\"], {\n    className: classes.flexCenter\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"img\", {\n    src: \"images/fcv_main_logo.svg\",\n    width: \"200\"\n  }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"Typography\"], {\n    component: \"h2\",\n    className: classes.formText,\n    gutterBottom: true\n  }, \"Login\"), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"Card\"], null, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"CardContent\"], {\n    style: {\n      paddingBottom: \"40px\"\n    },\n    className: classes.flexCenter\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"TextField\"], {\n    required: true,\n    label: \"Username\",\n    defaultValue: email,\n    className: classes.textField,\n    margin: \"normal\",\n    variant: \"outlined\"\n  }), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"TextField\"], {\n    color: \"error\",\n    required: true,\n    label: \"password\",\n    defaultValue: password,\n    className: classes.textField,\n    margin: \"normal\",\n    variant: \"outlined\"\n  }))), react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(\"div\", {\n    className: classes.loginButton\n  }, react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"Fab\"], {\n    color: \"secondary\",\n    className: buttonClassname,\n    onClick: login\n  }, error ? react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_6___default.a, null) : success ? react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_5___default.a, null) : react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_7___default.a, null)), loading && react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_4__[\"CircularProgress\"], {\n    size: 68,\n    className: classes.fabProgress\n  })))));\n}\n\nLoginForm.propTypes = {\n  classes: prop_types__WEBPACK_IMPORTED_MODULE_2___default.a.object.isRequired\n};\n/* harmony default export */ __webpack_exports__[\"default\"] = (Object(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_3__[\"withStyles\"])(styles)(LoginForm));\n\n//# sourceURL=webpack:///./js/components/login.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(function(React) {/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! classnames */ \"./node_modules/classnames/index.js\");\n/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(classnames__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! prop-types */ \"./node_modules/prop-types/index.js\");\n/* harmony import */ var prop_types__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(prop_types__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material-ui/core/styles */ \"./node_modules/@material-ui/core/styles/index.js\");\n/* harmony import */ var _material_ui_core_styles__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var _material_ui_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material-ui/core */ \"./node_modules/@material-ui/core/index.es.js\");\n/* harmony import */ var _material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material-ui/icons/Check */ \"./node_modules/@material-ui/icons/Check.js\");\n/* harmony import */ var _material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var _material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material-ui/icons/Refresh */ \"./node_modules/@material-ui/icons/Refresh.js\");\n/* harmony import */ var _material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var _material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material-ui/icons/ArrowForwardIos */ \"./node_modules/@material-ui/icons/ArrowForwardIos.js\");\n/* harmony import */ var _material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var _material_ui_icons_Visibility__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @material-ui/icons/Visibility */ \"./node_modules/@material-ui/icons/Visibility.js\");\n/* harmony import */ var _material_ui_icons_Visibility__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_Visibility__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var _material_ui_icons_VisibilityOff__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @material-ui/icons/VisibilityOff */ \"./node_modules/@material-ui/icons/VisibilityOff.js\");\n/* harmony import */ var _material_ui_icons_VisibilityOff__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(_material_ui_icons_VisibilityOff__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var validator_lib_isEmail__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! validator/lib/isEmail */ \"./node_modules/validator/lib/isEmail.js\");\n/* harmony import */ var validator_lib_isEmail__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(validator_lib_isEmail__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! validator/lib/isLength */ \"./node_modules/validator/lib/isLength.js\");\n/* harmony import */ var validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10__);\n\n\n\n\n\n\n\n\n\n\n\n\nconst styles = theme => ({\n  background: {\n    backgroundColor: theme.palette.primary.main,\n    display: 'flex',\n    width: '100%',\n    height: '100vh',\n    justifyContent: 'center',\n    alignItems: 'center',\n    [theme.breakpoints.up('sm')]: {\n      backgroundColor: theme.palette.primary.dark\n    }\n  },\n  formText: {\n    color: theme.palette.primary.contrastText,\n    fontSize: 24,\n    padding: 20\n  },\n  form: {\n    color: '#ffffff !important',\n    maxWidth: '400px',\n    width: '100%',\n    backgroundColor: theme.palette.primary.main,\n    padding: '20px',\n    position: 'relative',\n    borderRadius: theme.shape.borderRadius,\n    [theme.breakpoints.up('sm')]: {\n      backgroundColor: theme.palette.primary.main\n    }\n  },\n  flexCenter: {\n    position: 'relative',\n    display: 'flex',\n    flexDirection: 'column',\n    justifyContent: 'center',\n    alignItems: 'center'\n  },\n  wrapper: {\n    margin: theme.spacing.unit,\n    position: 'relative'\n  },\n  buttonSuccess: {\n    backgroundColor: theme.status.success.main,\n    color: theme.status.success.contrastText,\n    '&:hover': {\n      backgroundColor: theme.status.success.dark\n    }\n  },\n  buttonError: {\n    backgroundColor: theme.palette.error.main,\n    color: theme.palette.error.contrastText,\n    '&:hover': {\n      backgroundColor: theme.palette.error.dark\n    }\n  },\n  fabProgress: {\n    color: theme.palette.secondary.dark,\n    position: 'absolute',\n    top: -6,\n    left: -6,\n    zIndex: 1\n  },\n  loginButton: {\n    margin: theme.spacing.unit,\n    marginTop: \"-25px\",\n    position: 'relative'\n  }\n});\n\nfunction LoginForm(props) {\n  const {\n    classes\n  } = props;\n  const requestURL = props.functions.state.requestURL;\n  const [values, setValues] = React.useState({\n    loading: false,\n    success: false,\n    error: false,\n    errorMessage: '',\n    email: '',\n    emailError: '',\n    password: '',\n    passwordError: '',\n    formError: '',\n    passwordVisible: false\n  });\n\n  const handleChange = prop => event => {\n    setValues({ ...values,\n      [prop]: event.target.value\n    });\n  };\n\n  const handleChangeValue = (prop, value) => {\n    setValues({ ...values,\n      [prop]: value\n    });\n  };\n\n  const handlePasswordVisibility = () => {\n    handleChangeValue('passwordVisible', !values.passwordVisible);\n  };\n\n  const validPassword = () => {\n    if (!validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10___default()(values.password, {\n      min: 3,\n      max: 255\n    })) {\n      handleChangeValue(\"passwordError\", \"Invalid Password !!\");\n    } else {\n      handleChangeValue(\"passwordError\", \"\");\n    }\n  };\n\n  const validEmail = () => {\n    if (!validator_lib_isEmail__WEBPACK_IMPORTED_MODULE_9___default()(values.email) || !validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10___default()(values.email, {\n      min: 5,\n      max: 255\n    })) {\n      handleChangeValue(\"emailError\", \"Invalid Email Address !!\");\n    } else {\n      handleChangeValue(\"emailError\", \"\");\n    }\n  };\n\n  const buttonClassname = classnames__WEBPACK_IMPORTED_MODULE_0___default()({\n    [classes.buttonSuccess]: values.success,\n    [classes.buttonError]: values.error\n  });\n\n  function login() {\n    if (!values.loading) {\n      handleChangeValue('error', false);\n      handleChangeValue('success', false);\n      handleChangeValue('loading', true);\n      let postRequest = {\n        \"requestURL\": requestURL + \"agent/login\",\n        \"login\": true,\n        \"agent_email_address\": values.email,\n        \"agent_password\": values.password\n      };\n      fetch('includes/authenticationBinder.php', {\n        headers: {\n          'Content-type': 'application/x-www-form-urlencoded'\n        },\n        method: 'POST',\n        body: Object.keys(postRequest).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(postRequest[key])).join('&')\n      }).then(function (response) {\n        return response.json();\n      }).then(function (data) {\n        handleChangeValue('loading', false);\n\n        if (data.login == 'success') {\n          handleChangeValue('success', true);\n          localStorage.setItem('loginSession', data.token);\n          props.functions.checkLogin();\n        } else {\n          handleChangeValue('error', true);\n          handleChangeValue('errorMessage', data.error);\n        }\n      }).catch(function () {\n        handleChangeValue('error', true);\n        handleChangeValue('loading', false);\n        handleChangeValue('errorMessage', \"Connection Failed\");\n      });\n    }\n  }\n\n  return React.createElement(\"div\", {\n    className: classes.background\n  }, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"Card\"], {\n    className: classes.form\n  }, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"CardContent\"], {\n    className: classes.flexCenter\n  }, React.createElement(\"img\", {\n    src: \"images/fcv_main_logo.svg\",\n    width: \"200\"\n  }), React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"Typography\"], {\n    component: \"h2\",\n    className: classes.formText,\n    gutterBottom: true\n  }, \"Login\"), React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"Card\"], null, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"CardContent\"], {\n    style: {\n      paddingBottom: \"40px\"\n    },\n    className: classes.flexCenter\n  }, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"Typography\"], {\n    color: \"error\",\n    variant: \"body1\",\n    gutterBottom: true\n  }, values.errorMessage), React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"TextField\"], {\n    fullWidth: true,\n    label: \"Email\",\n    onBlur: validEmail,\n    error: values.emailError != '' ? true : false,\n    defaultValue: values.email,\n    onChange: handleChange('email'),\n    type: \"email\",\n    helperText: values.emailError,\n    className: classes.textField,\n    margin: \"normal\",\n    variant: \"outlined\"\n  }), React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"TextField\"], {\n    label: \"Password\",\n    onBlur: validPassword,\n    error: values.passwordError != '' ? true : false,\n    defaultValue: values.password,\n    onChange: handleChange('password'),\n    helperText: values.passwordError,\n    className: classes.textField,\n    type: values.passwordVisible ? 'text' : 'password',\n    margin: \"normal\",\n    variant: \"outlined\",\n    InputProps: {\n      endAdornment: React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"InputAdornment\"], {\n        position: \"end\"\n      }, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"IconButton\"], {\n        \"aria-label\": \"Toggle password visibility\",\n        onClick: handlePasswordVisibility\n      }, values.passwordVisible ? React.createElement(_material_ui_icons_VisibilityOff__WEBPACK_IMPORTED_MODULE_8___default.a, null) : React.createElement(_material_ui_icons_Visibility__WEBPACK_IMPORTED_MODULE_7___default.a, null)))\n    }\n  }))), React.createElement(\"div\", {\n    className: classes.loginButton\n  }, React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"Fab\"], {\n    color: \"secondary\",\n    className: buttonClassname,\n    onClick: login,\n    disabled: !validator_lib_isEmail__WEBPACK_IMPORTED_MODULE_9___default()(values.email) || !validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10___default()(values.email, {\n      min: 5,\n      max: 255\n    }) || !validator_lib_isLength__WEBPACK_IMPORTED_MODULE_10___default()(values.password, {\n      min: 3,\n      max: 255\n    })\n  }, values.error ? React.createElement(_material_ui_icons_Refresh__WEBPACK_IMPORTED_MODULE_5___default.a, null) : values.success ? React.createElement(_material_ui_icons_Check__WEBPACK_IMPORTED_MODULE_4___default.a, null) : React.createElement(_material_ui_icons_ArrowForwardIos__WEBPACK_IMPORTED_MODULE_6___default.a, null)), values.loading && React.createElement(_material_ui_core__WEBPACK_IMPORTED_MODULE_3__[\"CircularProgress\"], {\n    size: 68,\n    className: classes.fabProgress\n  })))));\n}\n\nLoginForm.propTypes = {\n  classes: prop_types__WEBPACK_IMPORTED_MODULE_1___default.a.object.isRequired\n};\n/* harmony default export */ __webpack_exports__[\"default\"] = (Object(_material_ui_core_styles__WEBPACK_IMPORTED_MODULE_2__[\"withStyles\"])(styles)(LoginForm));\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! react */ \"./node_modules/react/index.js\")))\n\n//# sourceURL=webpack:///./js/components/login.js?");
 
 /***/ }),
 
@@ -4087,6 +4794,30 @@ eval("\n\nvar _interopRequireDefault = __webpack_require__(/*! @babel/runtime/he
 
 /***/ }),
 
+/***/ "./node_modules/@material-ui/icons/Visibility.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@material-ui/icons/Visibility.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nvar _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ \"./node_modules/@babel/runtime/helpers/interopRequireDefault.js\");\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = void 0;\n\nvar _react = _interopRequireDefault(__webpack_require__(/*! react */ \"./node_modules/react/index.js\"));\n\nvar _createSvgIcon = _interopRequireDefault(__webpack_require__(/*! ./utils/createSvgIcon */ \"./node_modules/@material-ui/icons/utils/createSvgIcon.js\"));\n\nvar _default = (0, _createSvgIcon.default)(_react.default.createElement(_react.default.Fragment, null, _react.default.createElement(\"path\", {\n  fill: \"none\",\n  d: \"M0 0h24v24H0z\"\n}), _react.default.createElement(\"path\", {\n  d: \"M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z\"\n})), 'Visibility');\n\nexports.default = _default;\n\n//# sourceURL=webpack:///./node_modules/@material-ui/icons/Visibility.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material-ui/icons/VisibilityOff.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@material-ui/icons/VisibilityOff.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nvar _interopRequireDefault = __webpack_require__(/*! @babel/runtime/helpers/interopRequireDefault */ \"./node_modules/@babel/runtime/helpers/interopRequireDefault.js\");\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = void 0;\n\nvar _react = _interopRequireDefault(__webpack_require__(/*! react */ \"./node_modules/react/index.js\"));\n\nvar _createSvgIcon = _interopRequireDefault(__webpack_require__(/*! ./utils/createSvgIcon */ \"./node_modules/@material-ui/icons/utils/createSvgIcon.js\"));\n\nvar _default = (0, _createSvgIcon.default)(_react.default.createElement(_react.default.Fragment, null, _react.default.createElement(\"path\", {\n  fill: \"none\",\n  d: \"M0 0h24v24H0zm0 0h24v24H0zm0 0h24v24H0zm0 0h24v24H0z\"\n}), _react.default.createElement(\"path\", {\n  d: \"M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z\"\n})), 'VisibilityOff');\n\nexports.default = _default;\n\n//# sourceURL=webpack:///./node_modules/@material-ui/icons/VisibilityOff.js?");
+
+/***/ }),
+
 /***/ "./node_modules/@material-ui/icons/utils/createSvgIcon.js":
 /*!****************************************************************!*\
   !*** ./node_modules/@material-ui/icons/utils/createSvgIcon.js ***!
@@ -5460,6 +6191,90 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(f
 
 "use strict";
 eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"default\", function() { return symbolObservablePonyfill; });\nfunction symbolObservablePonyfill(root) {\n\tvar result;\n\tvar Symbol = root.Symbol;\n\n\tif (typeof Symbol === 'function') {\n\t\tif (Symbol.observable) {\n\t\t\tresult = Symbol.observable;\n\t\t} else {\n\t\t\tresult = Symbol('observable');\n\t\t\tSymbol.observable = result;\n\t\t}\n\t} else {\n\t\tresult = '@@observable';\n\t}\n\n\treturn result;\n};\n\n\n//# sourceURL=webpack:///./node_modules/symbol-observable/es/ponyfill.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/isByteLength.js":
+/*!****************************************************!*\
+  !*** ./node_modules/validator/lib/isByteLength.js ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = isByteLength;\n\nvar _assertString = _interopRequireDefault(__webpack_require__(/*! ./util/assertString */ \"./node_modules/validator/lib/util/assertString.js\"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nfunction _typeof(obj) { if (typeof Symbol === \"function\" && typeof Symbol.iterator === \"symbol\") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === \"function\" && obj.constructor === Symbol && obj !== Symbol.prototype ? \"symbol\" : typeof obj; }; } return _typeof(obj); }\n\n/* eslint-disable prefer-rest-params */\nfunction isByteLength(str, options) {\n  (0, _assertString.default)(str);\n  var min;\n  var max;\n\n  if (_typeof(options) === 'object') {\n    min = options.min || 0;\n    max = options.max;\n  } else {\n    // backwards compatibility: isByteLength(str, min [, max])\n    min = arguments[1];\n    max = arguments[2];\n  }\n\n  var len = encodeURI(str).split(/%..|./).length - 1;\n  return len >= min && (typeof max === 'undefined' || len <= max);\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/isByteLength.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/isEmail.js":
+/*!***********************************************!*\
+  !*** ./node_modules/validator/lib/isEmail.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = isEmail;\n\nvar _assertString = _interopRequireDefault(__webpack_require__(/*! ./util/assertString */ \"./node_modules/validator/lib/util/assertString.js\"));\n\nvar _merge = _interopRequireDefault(__webpack_require__(/*! ./util/merge */ \"./node_modules/validator/lib/util/merge.js\"));\n\nvar _isByteLength = _interopRequireDefault(__webpack_require__(/*! ./isByteLength */ \"./node_modules/validator/lib/isByteLength.js\"));\n\nvar _isFQDN = _interopRequireDefault(__webpack_require__(/*! ./isFQDN */ \"./node_modules/validator/lib/isFQDN.js\"));\n\nvar _isIP = _interopRequireDefault(__webpack_require__(/*! ./isIP */ \"./node_modules/validator/lib/isIP.js\"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nvar default_email_options = {\n  allow_display_name: false,\n  require_display_name: false,\n  allow_utf8_local_part: true,\n  require_tld: true\n};\n/* eslint-disable max-len */\n\n/* eslint-disable no-control-regex */\n\nvar displayName = /^[a-z\\d!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~\\.\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF]+[a-z\\d!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~\\,\\.\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF\\s]*<(.+)>$/i;\nvar emailUserPart = /^[a-z\\d!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]+$/i;\nvar gmailUserPart = /^[a-z\\d]+$/;\nvar quotedEmailUser = /^([\\s\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f\\x21\\x23-\\x5b\\x5d-\\x7e]|(\\\\[\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]))*$/i;\nvar emailUserUtf8Part = /^[a-z\\d!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF]+$/i;\nvar quotedEmailUserUtf8 = /^([\\s\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f\\x21\\x23-\\x5b\\x5d-\\x7e\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF]|(\\\\[\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF]))*$/i;\n/* eslint-enable max-len */\n\n/* eslint-enable no-control-regex */\n\nfunction isEmail(str, options) {\n  (0, _assertString.default)(str);\n  options = (0, _merge.default)(options, default_email_options);\n\n  if (options.require_display_name || options.allow_display_name) {\n    var display_email = str.match(displayName);\n\n    if (display_email) {\n      str = display_email[1];\n    } else if (options.require_display_name) {\n      return false;\n    }\n  }\n\n  var parts = str.split('@');\n  var domain = parts.pop();\n  var user = parts.join('@');\n  var lower_domain = domain.toLowerCase();\n\n  if (options.domain_specific_validation && (lower_domain === 'gmail.com' || lower_domain === 'googlemail.com')) {\n    /*\n      Previously we removed dots for gmail addresses before validating.\n      This was removed because it allows `multiple..dots@gmail.com`\n      to be reported as valid, but it is not.\n      Gmail only normalizes single dots, removing them from here is pointless,\n      should be done in normalizeEmail\n    */\n    user = user.toLowerCase(); // Removing sub-address from username before gmail validation\n\n    var username = user.split('+')[0]; // Dots are not included in gmail length restriction\n\n    if (!(0, _isByteLength.default)(username.replace('.', ''), {\n      min: 6,\n      max: 30\n    })) {\n      return false;\n    }\n\n    var _user_parts = username.split('.');\n\n    for (var i = 0; i < _user_parts.length; i++) {\n      if (!gmailUserPart.test(_user_parts[i])) {\n        return false;\n      }\n    }\n  }\n\n  if (!(0, _isByteLength.default)(user, {\n    max: 64\n  }) || !(0, _isByteLength.default)(domain, {\n    max: 254\n  })) {\n    return false;\n  }\n\n  if (!(0, _isFQDN.default)(domain, {\n    require_tld: options.require_tld\n  })) {\n    if (!options.allow_ip_domain) {\n      return false;\n    }\n\n    if (!(0, _isIP.default)(domain)) {\n      if (!domain.startsWith('[') || !domain.endsWith(']')) {\n        return false;\n      }\n\n      var noBracketdomain = domain.substr(1, domain.length - 2);\n\n      if (noBracketdomain.length === 0 || !(0, _isIP.default)(noBracketdomain)) {\n        return false;\n      }\n    }\n  }\n\n  if (user[0] === '\"') {\n    user = user.slice(1, user.length - 1);\n    return options.allow_utf8_local_part ? quotedEmailUserUtf8.test(user) : quotedEmailUser.test(user);\n  }\n\n  var pattern = options.allow_utf8_local_part ? emailUserUtf8Part : emailUserPart;\n  var user_parts = user.split('.');\n\n  for (var _i = 0; _i < user_parts.length; _i++) {\n    if (!pattern.test(user_parts[_i])) {\n      return false;\n    }\n  }\n\n  return true;\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/isEmail.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/isFQDN.js":
+/*!**********************************************!*\
+  !*** ./node_modules/validator/lib/isFQDN.js ***!
+  \**********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = isFQDN;\n\nvar _assertString = _interopRequireDefault(__webpack_require__(/*! ./util/assertString */ \"./node_modules/validator/lib/util/assertString.js\"));\n\nvar _merge = _interopRequireDefault(__webpack_require__(/*! ./util/merge */ \"./node_modules/validator/lib/util/merge.js\"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nvar default_fqdn_options = {\n  require_tld: true,\n  allow_underscores: false,\n  allow_trailing_dot: false\n};\n\nfunction isFQDN(str, options) {\n  (0, _assertString.default)(str);\n  options = (0, _merge.default)(options, default_fqdn_options);\n  /* Remove the optional trailing dot before checking validity */\n\n  if (options.allow_trailing_dot && str[str.length - 1] === '.') {\n    str = str.substring(0, str.length - 1);\n  }\n\n  var parts = str.split('.');\n\n  for (var i = 0; i < parts.length; i++) {\n    if (parts[i].length > 63) {\n      return false;\n    }\n  }\n\n  if (options.require_tld) {\n    var tld = parts.pop();\n\n    if (!parts.length || !/^([a-z\\u00a1-\\uffff]{2,}|xn[a-z0-9-]{2,})$/i.test(tld)) {\n      return false;\n    } // disallow spaces\n\n\n    if (/[\\s\\u2002-\\u200B\\u202F\\u205F\\u3000\\uFEFF\\uDB40\\uDC20]/.test(tld)) {\n      return false;\n    }\n  }\n\n  for (var part, _i = 0; _i < parts.length; _i++) {\n    part = parts[_i];\n\n    if (options.allow_underscores) {\n      part = part.replace(/_/g, '');\n    }\n\n    if (!/^[a-z\\u00a1-\\uffff0-9-]+$/i.test(part)) {\n      return false;\n    } // disallow full-width chars\n\n\n    if (/[\\uff01-\\uff5e]/.test(part)) {\n      return false;\n    }\n\n    if (part[0] === '-' || part[part.length - 1] === '-') {\n      return false;\n    }\n  }\n\n  return true;\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/isFQDN.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/isIP.js":
+/*!********************************************!*\
+  !*** ./node_modules/validator/lib/isIP.js ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = isIP;\n\nvar _assertString = _interopRequireDefault(__webpack_require__(/*! ./util/assertString */ \"./node_modules/validator/lib/util/assertString.js\"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nvar ipv4Maybe = /^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/;\nvar ipv6Block = /^[0-9A-F]{1,4}$/i;\n\nfunction isIP(str) {\n  var version = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';\n  (0, _assertString.default)(str);\n  version = String(version);\n\n  if (!version) {\n    return isIP(str, 4) || isIP(str, 6);\n  } else if (version === '4') {\n    if (!ipv4Maybe.test(str)) {\n      return false;\n    }\n\n    var parts = str.split('.').sort(function (a, b) {\n      return a - b;\n    });\n    return parts[3] <= 255;\n  } else if (version === '6') {\n    var blocks = str.split(':');\n    var foundOmissionBlock = false; // marker to indicate ::\n    // At least some OS accept the last 32 bits of an IPv6 address\n    // (i.e. 2 of the blocks) in IPv4 notation, and RFC 3493 says\n    // that '::ffff:a.b.c.d' is valid for IPv4-mapped IPv6 addresses,\n    // and '::a.b.c.d' is deprecated, but also valid.\n\n    var foundIPv4TransitionBlock = isIP(blocks[blocks.length - 1], 4);\n    var expectedNumberOfBlocks = foundIPv4TransitionBlock ? 7 : 8;\n\n    if (blocks.length > expectedNumberOfBlocks) {\n      return false;\n    } // initial or final ::\n\n\n    if (str === '::') {\n      return true;\n    } else if (str.substr(0, 2) === '::') {\n      blocks.shift();\n      blocks.shift();\n      foundOmissionBlock = true;\n    } else if (str.substr(str.length - 2) === '::') {\n      blocks.pop();\n      blocks.pop();\n      foundOmissionBlock = true;\n    }\n\n    for (var i = 0; i < blocks.length; ++i) {\n      // test for a :: which can not be at the string start/end\n      // since those cases have been handled above\n      if (blocks[i] === '' && i > 0 && i < blocks.length - 1) {\n        if (foundOmissionBlock) {\n          return false; // multiple :: in address\n        }\n\n        foundOmissionBlock = true;\n      } else if (foundIPv4TransitionBlock && i === blocks.length - 1) {// it has been checked before that the last\n        // block is a valid IPv4 address\n      } else if (!ipv6Block.test(blocks[i])) {\n        return false;\n      }\n    }\n\n    if (foundOmissionBlock) {\n      return blocks.length >= 1;\n    }\n\n    return blocks.length === expectedNumberOfBlocks;\n  }\n\n  return false;\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/isIP.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/isLength.js":
+/*!************************************************!*\
+  !*** ./node_modules/validator/lib/isLength.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = isLength;\n\nvar _assertString = _interopRequireDefault(__webpack_require__(/*! ./util/assertString */ \"./node_modules/validator/lib/util/assertString.js\"));\n\nfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }\n\nfunction _typeof(obj) { if (typeof Symbol === \"function\" && typeof Symbol.iterator === \"symbol\") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === \"function\" && obj.constructor === Symbol && obj !== Symbol.prototype ? \"symbol\" : typeof obj; }; } return _typeof(obj); }\n\n/* eslint-disable prefer-rest-params */\nfunction isLength(str, options) {\n  (0, _assertString.default)(str);\n  var min;\n  var max;\n\n  if (_typeof(options) === 'object') {\n    min = options.min || 0;\n    max = options.max;\n  } else {\n    // backwards compatibility: isLength(str, min [, max])\n    min = arguments[1];\n    max = arguments[2];\n  }\n\n  var surrogatePairs = str.match(/[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]/g) || [];\n  var len = str.length - surrogatePairs.length;\n  return len >= min && (typeof max === 'undefined' || len <= max);\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/isLength.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/util/assertString.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/validator/lib/util/assertString.js ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = assertString;\n\nfunction _typeof(obj) { if (typeof Symbol === \"function\" && typeof Symbol.iterator === \"symbol\") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === \"function\" && obj.constructor === Symbol && obj !== Symbol.prototype ? \"symbol\" : typeof obj; }; } return _typeof(obj); }\n\nfunction assertString(input) {\n  var isString = typeof input === 'string' || input instanceof String;\n\n  if (!isString) {\n    var invalidType;\n\n    if (input === null) {\n      invalidType = 'null';\n    } else {\n      invalidType = _typeof(input);\n\n      if (invalidType === 'object' && input.constructor && input.constructor.hasOwnProperty('name')) {\n        invalidType = input.constructor.name;\n      } else {\n        invalidType = \"a \".concat(invalidType);\n      }\n    }\n\n    throw new TypeError(\"Expected string but received \".concat(invalidType, \".\"));\n  }\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/util/assertString.js?");
+
+/***/ }),
+
+/***/ "./node_modules/validator/lib/util/merge.js":
+/*!**************************************************!*\
+  !*** ./node_modules/validator/lib/util/merge.js ***!
+  \**************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\n\nObject.defineProperty(exports, \"__esModule\", {\n  value: true\n});\nexports.default = merge;\n\nfunction merge() {\n  var obj = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};\n  var defaults = arguments.length > 1 ? arguments[1] : undefined;\n\n  for (var key in defaults) {\n    if (typeof obj[key] === 'undefined') {\n      obj[key] = defaults[key];\n    }\n  }\n\n  return obj;\n}\n\nmodule.exports = exports.default;\nmodule.exports.default = exports.default;\n\n//# sourceURL=webpack:///./node_modules/validator/lib/util/merge.js?");
 
 /***/ }),
 

@@ -44,8 +44,12 @@ module.exports = {
     plugins: [
         new MiniCssExtractPlugin({
             filename: "style.css"
+        }),
+        new webpack.HotModuleReplacementPlugin(),
+        new webpack.ProvidePlugin({
+            'React':     'react',
+            'ReactDOM':   'react-dom',
         })
-        
     ],
     mode : devMode ? 'development' : 'production'
 };
