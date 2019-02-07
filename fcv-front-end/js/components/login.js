@@ -1,7 +1,14 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
-import { Typography, Fab, CircularProgress, TextField, Card, CardContent, InputAdornment, IconButton } from '@material-ui/core';
+import withStyles from '@material-ui/core/styles/withStyles';
+import Typography from '@material-ui/core/Typography';
+import Fab from '@material-ui/core/Fab';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import TextField from '@material-ui/core/TextField';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import InputAdornment from '@material-ui/core/InputAdornment';
+import IconButton from '@material-ui/core/IconButton';
 import CheckIcon from '@material-ui/icons/Check';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import ArrowForwardIos from '@material-ui/icons/ArrowForwardIos';
@@ -97,9 +104,6 @@ function LoginForm(props) {
     const handleChangeValue = (prop, value) => {
         setValues({ ...values, [prop]: value });
     };
-    const handlePasswordVisibility = () => {
-        handleChangeValue('passwordVisible', !values.passwordVisible);
-    };
     const validPassword = () => {
         if(!isLength(values.password, {min : 3, max : 255})){
             handleChangeValue("passwordError", "Invalid Password !!");
@@ -193,7 +197,7 @@ function LoginForm(props) {
                             InputProps={{
                                 endAdornment: (
                                     <InputAdornment position="end">
-                                        <IconButton aria-label="Toggle password visibility" onClick={handlePasswordVisibility}>
+                                        <IconButton aria-label="Toggle password visibility" onClick={() => handleChangeValue('passwordVisible', !values.passwordVisible)}>
                                             {values.passwordVisible ? <VisibilityOff /> : <Visibility />}
                                         </IconButton>
                                     </InputAdornment>
