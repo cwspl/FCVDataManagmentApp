@@ -1,9 +1,12 @@
-import React, { Component } from "react";
 import {render} from "react-dom";
 import Header from "./components/Header";
 
-import {  MuiThemeProvider, createMuiTheme } from "@material-ui/core";
-import { indigo, yellow, green, red } from '@material-ui/core/colors';
+import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
+import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
+import indigo from '@material-ui/core/colors/indigo';
+import yellow from '@material-ui/core/colors/yellow';
+import green from '@material-ui/core/colors/green';
+import red from '@material-ui/core/colors/red';
 import LoginForm from './components/login';
 
 const theme = createMuiTheme({
@@ -31,7 +34,7 @@ const theme = createMuiTheme({
     }
 });
 
-class App extends Component{
+class App extends React.Component{
     constructor(props) {
         super(props);
         this.state = { 

@@ -1,12 +1,21 @@
-import React, { useState } from "react";
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { withStyles } from '@material-ui/core/styles';
-import { Typography, Fab, CircularProgress, TextField, Card, CardContent } from '@material-ui/core';
+import withStyles from '@material-ui/core/styles/withStyles';
+import Typography from '@material-ui/core/Typography';
+import Fab from '@material-ui/core/Fab';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import TextField from '@material-ui/core/TextField';
+import Card from '@material-ui/core/Card';
+import CardContent from '@material-ui/core/CardContent';
+import InputAdornment from '@material-ui/core/InputAdornment';
+import IconButton from '@material-ui/core/IconButton';
 import CheckIcon from '@material-ui/icons/Check';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import ArrowForwardIos from '@material-ui/icons/ArrowForwardIos';
-
+import Visibility from '@material-ui/icons/Visibility';
+import VisibilityOff from '@material-ui/icons/VisibilityOff';
+import isEmail from 'validator/lib/isEmail';
+import isLength from 'validator/lib/isLength';
 const styles = theme => ({
     background: {
         backgroundColor: theme.palette.primary.main,
@@ -77,26 +86,52 @@ const styles = theme => ({
 function LoginForm(props) {
     const { classes } = props;
     const requestURL = props.functions.state.requestURL;
-    const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-
+    const [values, setValues] = React.useState({
+        loading: false,
+        success: false,
+        error: false,
+        errorMessage: '',
+        email: '',
+        emailError: '',
+        password: '',
+        passwordError: '',
+        formError: '',
+        passwordVisible: false,
+    });
+    const handleChange = prop => event => {
+        setValues({ ...values, [prop]: event.target.value });
+    };
+    const handleChangeValue = (prop, value) => {
+        setValues({ ...values, [prop]: value });
+    };
+    const validPassword = () => {
+        if(!isLength(values.password, {min : 3, max : 255})){
+            handleChangeValue("passwordError", "Invalid Password !!");
+        } else {
+            handleChangeValue("passwordError", "");
+        }
+    };
+    const validEmail = () => {
+        if(!isEmail(values.email) || !isLength(values.email, {min : 5, max : 255}) ){
+            handleChangeValue("emailError", "Invalid Email Address !!");
+        } else {
+            handleChangeValue("emailError", "");
+        }
+    };
     const buttonClassname = classNames({
-        [classes.buttonSuccess]: success,
-        [classes.buttonError]: error,
+        [classes.buttonSuccess]: values.success,
+        [classes.buttonError]: values.error,
     });
     function login() {
-        if (!loading) {
-            setSuccess(false);
-            setError(false);
-            setLoading(true);
+        if (!values.loading) {
+            handleChangeValue('error',false);
+            handleChangeValue('success',false);
+            handleChangeValue('loading',true);
             let postRequest = {
-                'requestURL': requestURL+'agent/login',
-                'login': true,
-                "agent_email_address": email,
-	            "agent_password": password
+                "requestURL": requestURL+"agent/login",
+                "login": true,
+                "agent_email_address": values.email,
+	            "agent_password": values.password
             };
             fetch('includes/authenticationBinder.php', {
                 headers: {
@@ -108,15 +143,19 @@ function LoginForm(props) {
                 })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    setLoading(false);
+                    handleChangeValue('loading',false);
                     if(data.login == 'success'){
-                        setSuccess(true);
+                        handleChangeValue('success',true);
                         localStorage.setItem('loginSession', data.token);
                         props.functions.checkLogin();
                     } else {
-                        console.log(data);
-                        setError(true);
+                        handleChangeValue('error',true);
+                        handleChangeValue('errorMessage',data.error);
                     }
+                }).catch(function() {
+                    handleChangeValue('error',true);
+                    handleChangeValue('loading',false);
+                    handleChangeValue('errorMessage',"Connection Failed");
                 });
         }
     }
@@ -130,30 +169,48 @@ function LoginForm(props) {
                 </Typography>
                 <Card>
                     <CardContent style={{paddingBottom : "40px"}} className={classes.flexCenter}>
+                        <Typography color='error' variant="body1" gutterBottom>{values.errorMessage}</Typography>
                         <TextField
-                            required
-                            label="Username"
-                            defaultValue={email}
+                            fullWidth
+                            label="Email"
+                            onBlur={validEmail}
+                            error={values.emailError != '' ? true : false }
+                            defaultValue={values.email}
+                            onChange={handleChange('email')}
+                            type='email'
+                            helperText={values.emailError}
                             className={classes.textField}
                             margin="normal"
                             variant="outlined"
                         />
                         <TextField
-                            color="error"
-                            required
-                            label="password"
-                            defaultValue={password}
+                            label="Password"
+                            onBlur={validPassword}
+                            error={values.passwordError != '' ? true : false }
+                            defaultValue={values.password}
+                            onChange={handleChange('password')}
+                            helperText={values.passwordError}
                             className={classes.textField}
+                            type={values.passwordVisible ? 'text' : 'password'}
                             margin="normal"
                             variant="outlined"
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton aria-label="Toggle password visibility" onClick={() => handleChangeValue('passwordVisible', !values.passwordVisible)}>
+                                            {values.passwordVisible ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                     </CardContent>
                 </Card>
                 <div className={classes.loginButton}>
-                    <Fab color="secondary" className={buttonClassname} onClick={login}>
-                        {error ? <RefreshIcon /> : success ? <CheckIcon /> : <ArrowForwardIos/> }
+                    <Fab color="secondary" className={buttonClassname} onClick={login} disabled={(!isEmail(values.email) || !isLength(values.email, {min : 5, max : 255}) || !isLength(values.password, {min : 3, max : 255}))}>
+                        {values.error ? <RefreshIcon /> : values.success ? <CheckIcon /> : <ArrowForwardIos/> }
                     </Fab>
-                    {loading && <CircularProgress size={68} className={classes.fabProgress} />}
+                    {values.loading && <CircularProgress size={68} className={classes.fabProgress} />}
                 </div>
             </CardContent>
         </Card>
