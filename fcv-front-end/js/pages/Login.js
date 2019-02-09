@@ -85,7 +85,7 @@ const styles = theme => ({
 });
 function LoginForm(props) {
     const { classes } = props;
-    const requestURL = props.functions.state.requestURL;
+    const requestURL = props.requestURL;
     const [values, setValues] = React.useState({
         loading: false,
         success: false,
@@ -147,7 +147,7 @@ function LoginForm(props) {
                     if(data.login == 'success'){
                         handleChangeValue('success',true);
                         localStorage.setItem('loginSession', data.token);
-                        props.functions.checkLogin();
+                        props.AppRefresh();
                     } else {
                         handleChangeValue('error',true);
                         handleChangeValue('errorMessage',data.error);

@@ -118,7 +118,7 @@ function SearchAppBar(props) {
             .then(function(response) { return response.json(); })
             .then(function(data) {
                 if(data.logout == 'success'){
-                  props.functions.checkLogin();
+                  props.AppRefresh();
                 }
             });
       }

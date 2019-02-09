@@ -1,5 +1,12 @@
 import {render} from "react-dom";
-import Header from "./components/Header";
+
+import { HashRouter as Router, Route } from "react-router-dom";
+
+import LoginForm from './pages/Login';
+import HomePage from './pages/Home';
+
+import Dashboard from "./components/Dashboard";
+import AllArea from "./components/AllArea";
 
 import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
@@ -7,7 +14,6 @@ import indigo from '@material-ui/core/colors/indigo';
 import yellow from '@material-ui/core/colors/yellow';
 import green from '@material-ui/core/colors/green';
 import red from '@material-ui/core/colors/red';
-import LoginForm from './components/login';
 
 const theme = createMuiTheme({
     palette: {
@@ -38,23 +44,30 @@ class App extends React.Component{
     constructor(props) {
         super(props);
         this.state = { 
-            main: '',
-            requestURL: 'http://127.0.0.1:8000/api/'
+            mainPage: '',
+            authenticationBindingUrl: 'includes/authenticationBinder.php',
+            shareProps: {
+                AppRefresh: this.appRefresh.bind(this),
+                requestURL: 'http://127.0.0.1:8000/api/',
+                redirectTo: this.redirect.bind(this)
+            }
         };
     }
     componentDidMount(){
         this.checkLogin();
     }
-    componentDidMount(){
+    appRefresh(){
         this.checkLogin();
     }
+    redirect(url){
+        console.log(url)
+    }
     checkLogin(){
-        let that = this;
         if(localStorage.getItem('loginSession')){
             let postRequest = {
                 'checkToken': localStorage.getItem('loginSession')
             };
-            fetch('includes/authenticationBinder.php', {
+            fetch(this.state.authenticationBindingUrl, {
                 headers: {
                     'Content-type': 'application/x-www-form-urlencoded'
                 },
@@ -65,20 +78,27 @@ class App extends React.Component{
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     if(data.login == 'success'){
-                        localStorage.setItem('loginSession', data.token);
-                        that.setState({ main: <Header functions={that}/> })
+                        localStorage.setItem('loginSession', data.token); 
+                        this.setState({ mainPage:
+                            <Router>
+                                <HomePage { ...this.state.shareProps }>
+                                    <Route exact path={'/'} component={Dashboard} { ...this.state.shareProps }/>
+                                    <Route exact path={'/all-area'} component={AllArea} { ...this.state.shareProps }/>
+                                </HomePage>
+                            </Router>
+                        })
                     } else {
-                        that.setState({ main: <LoginForm functions={that} /> })
+                        this.setState({ mainPage: <LoginForm { ...this.state.shareProps }/> })
                     }
-                });
+                }.bind(this));
         } else {
-            this.setState({ main: <LoginForm functions={that} /> })
+            this.setState({ mainPage: <LoginForm  { ...this.state.shareProps }/> })
         }
     }
     render() {
         return(
             <div>
-                {this.state.main}
+                {this.state.mainPage}
             </div>
         ) 
     }
