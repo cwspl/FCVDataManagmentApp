@@ -55,6 +55,25 @@
                 "logout" => 'success'
             ));
             exit();
+        } else if(isset($_POST['requestType']) && isset($_POST['requestURL'])){
+            $fields = http_build_query($_POST);
+            $ch = curl_init($_POST['requestURL']);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_POST['requestType']); 
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                "Content-Type: application/x-www-form-urlencoded",
+                "Content-Length: ".strlen($fields),
+                "X-Requested-With: XMLHttpRequest",
+                "Authorization: Bearer ".$_SESSION['auth']
+            )); 
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fields); 
+            $response = json_decode(curl_exec($ch));
+            $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            echo json_encode(array(
+                "responseCode" => $status,
+                "response" => $response
+            ));
+            exit();
         }
     }
 ?>
