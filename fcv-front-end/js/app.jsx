@@ -49,8 +49,8 @@ class App extends React.Component{
             shareProps: {
                 AppRefresh: this.appRefresh.bind(this),
                 requestURL: 'http://127.0.0.1:8000/api/',
-                redirectTo: this.redirect.bind(this)
-            }
+                authenticationBindingUrl: 'includes/authenticationBinder.php',
+            },
         };
     }
     componentDidMount(){
@@ -59,15 +59,12 @@ class App extends React.Component{
     appRefresh(){
         this.checkLogin();
     }
-    redirect(url){
-        console.log(url)
-    }
     checkLogin(){
         if(localStorage.getItem('loginSession')){
             let postRequest = {
                 'checkToken': localStorage.getItem('loginSession')
             };
-            fetch(this.state.authenticationBindingUrl, {
+            fetch(this.state.shareProps.authenticationBindingUrl, {
                 headers: {
                     'Content-type': 'application/x-www-form-urlencoded'
                 },
@@ -77,13 +74,15 @@ class App extends React.Component{
                 })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    if(data.login == 'success'){
+                    if(data.login === 'success'){
                         localStorage.setItem('loginSession', data.token); 
                         this.setState({ mainPage:
                             <Router>
-                                <HomePage { ...this.state.shareProps }>
-                                    <Route exact path={'/'} component={Dashboard} { ...this.state.shareProps }/>
-                                    <Route exact path={'/all-area'} component={AllArea} { ...this.state.shareProps }/>
+                                <HomePage { ...this.state.shareProps } redirectTo={history.push}>
+                                    <Route exact path={'/'} 
+                                        render={(props) => <Dashboard {...props} { ...this.state.shareProps }/> } />
+                                    <Route exact path={'/all-area'} 
+                                        render={(props) => <AllArea {...props} { ...this.state.shareProps }/> } />
                                 </HomePage>
                             </Router>
                         })

@@ -9,7 +9,7 @@ const styles = theme => ({
 function HomePage(props) {
     return (
         <div>
-            <Header AppRefresh={props.AppRefresh}/>
+            <Header {...props} loadingStatus={props.mainLoading} />
             <div style={{ paddingTop: 80 }}></div>
             { props.children }
         </div>
