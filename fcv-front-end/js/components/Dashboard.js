@@ -25,7 +25,7 @@ const styles = theme => ({
       marginRight: theme.spacing.unit,
     },
     blueButton: {
-        margin: theme.spacing.unit,
+        width: '100%',
         backgroundColor: Blue[500],
             '&:hover': {
                 backgroundColor: Blue[700],
@@ -37,7 +37,15 @@ const styles = theme => ({
             '&:hover': {
                 backgroundColor: theme.status.success.dark,
             }
-    }
+    },
+    centerContainer:{
+        margin: 'auto',
+        padding: theme.spacing.unit*3,
+        display: 'flex',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        maxWidth: theme.breakpoints.values.sm
+    },
 });
 
 function Transition(props) {
@@ -47,8 +55,9 @@ function Transition(props) {
 function Dashboard(props) {
     const { classes } = props;
     const [openAdd, setOpenAdd] = React.useState(false);
+
     return (
-        <div>
+        <div className={classes.centerContainer}>
             <Badge color="secondary" badgeContent={4} className={classes.margin}>
                 <Button variant="contained" size="large" color="primary" className={classes.blueButton} 
                     onClick={() => props.history.push('/all-area')}>

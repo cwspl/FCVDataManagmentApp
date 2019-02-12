@@ -4,7 +4,12 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import InputBase from '@material-ui/core/InputBase';
 import Menu from '@material-ui/core/Menu';
+import MenuList from '@material-ui/core/MenuList';
 import MenuItem from '@material-ui/core/MenuItem';
+import ClickAwayListener from '@material-ui/core/ClickAwayListener';
+import Grow from '@material-ui/core/Grow';
+import Paper from '@material-ui/core/Paper';
+import Popper from '@material-ui/core/Popper';
 import Fade from '@material-ui/core/Fade';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -98,29 +103,82 @@ const styles = theme => ({
 });
 
 function SearchAppBar(props) {
+  console.log(props);
   const { classes } = props;
   const [menuAnchor, setMenuAnchor] = React.useState(null);
   const [searchExpand, setSearchExpand] = React.useState(null);
+
+  const [fetchCall, setFetchCall ] = React.useState(true);
+  const [allCustomers, setAllCustomers] = React.useState([]);
+  const [filteredCustomers, setFilteredCustomers] = React.useState([]);
+  
+  const [search, setSearch] = React.useState(false);
+  const anchorSearch = React.useRef(null);
+
+  const fetchCustomers = () => {
+      setFetchCall(false);
+      let postRequest = {
+        'requestType': 'GET',
+        'requestURL': props.requestURL+'customers',
+      };
+      fetch(props.authenticationBindingUrl, {
+          headers: {
+              'Content-type': 'application/x-www-form-urlencoded'
+          },
+          method: 'POST',
+          body: Object.keys(postRequest).map(key => encodeURIComponent(key) + 
+          '=' + encodeURIComponent(postRequest[key])).join('&')
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+          if(data.responseCode == 200){
+              setFilteredCustomers(data.response.customers);
+              setAllCustomers(data.response.customers);
+          }
+      }).catch(function() {
+        //
+      });
+  };
+  const searchCustomers = (event) => {
+    if(event.target.value.length > 2){
+      setSearch(true)
+      setFilteredCustomers(allCustomers.slice(0).filter(customer => (customer.customer_name.includes(event.target.value) || customer.customer_name_english.includes(event.target.value))))
+    } else {
+      setSearch(false);
+    }
+  }
+  if(fetchCall){
+    fetchCustomers();
+  }
+
+  function searchClose(event) {
+    if (anchorSearch.current.contains(event.target)) {
+      return;
+    }
+    setSearch(false);
+    setSearchExpand(false);
+  }
+
   function logout(){
       if(localStorage.getItem('loginSession')){
         localStorage.removeItem('loginSession');
         let postRequest = {
           'logout': true
         };
-        fetch('includes/authenticationBinder.php', {
+        fetch(props.authenticationBindingUrl, {
             headers: {
                 'Content-type': 'application/x-www-form-urlencoded'
             },
             method: 'POST',
             body: Object.keys(postRequest).map(key => encodeURIComponent(key) + 
             '=' + encodeURIComponent(postRequest[key])).join('&')
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                if(data.logout == 'success'){
-                  props.AppRefresh();
-                }
-            });
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if(data.logout == 'success'){
+              props.AppRefresh();
+            }
+        });
       }
   }
   function popMenu(event){
@@ -143,14 +201,38 @@ function SearchAppBar(props) {
               <SearchIcon />
             </div>
             <InputBase
-              onFocus={() => setSearchExpand(true)}
-              onBlur={() => setSearchExpand(false)}
+              inputRef={anchorSearch}
+              aria-owns={search ? 'customer-search' : undefined}
+              aria-haspopup="true"
+              onChange={searchCustomers}
+              onFocus={() => { setSearchExpand(true); }}
               placeholder="Search Customers"
               classes={{
                 root: classes.inputRoot,
                 input: classes.inputInput,
               }}
             />
+            <Popper open={search} anchorEl={anchorSearch.current} transition disablePortal>
+            {({ TransitionProps, placement }) => (
+              <Grow
+                {...TransitionProps}
+                id="customer-search"
+                style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
+              >
+                <Paper>
+                  <ClickAwayListener onClickAway={searchClose}>
+                    <MenuList style={{maxHeight: '70vh', overflowY: 'auto', width: 200}}>
+                      {
+                        filteredCustomers.map(customer => (
+                            <MenuItem onClick={() => props.history.push('table/'+customer.area_id+'/'+(new Date().getFullYear())+'/'+customer.customer_id)} key={customer.customer_id}>{ customer.customer_name }</MenuItem>
+                        ))
+                      }
+                    </MenuList>
+                  </ClickAwayListener>
+                </Paper>
+              </Grow>
+            )}
+          </Popper>
           </div>
           <IconButton style={{display : searchExpand ? window.innerWidth < 600 ? 'none': 'block' : 'block'}} color="inherit" aria-label="open notification">
               <Badge badgeContent={17} color="secondary">
