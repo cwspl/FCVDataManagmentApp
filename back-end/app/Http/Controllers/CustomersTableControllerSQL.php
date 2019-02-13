@@ -24,7 +24,7 @@ class CustomersTableControllerSQL extends Controller
                     ->first();
                 if($AreaDetails){
                     $result[$areaKey] = $AreaDetails->toArray();
-                    $filteredCustomers = Customers::select('customer_id','customer_name as name','customer_mobile_number as phone')
+                    $filteredCustomers = Customers::select('customer_id','customer_name as name','customer_name_english as name_english','customer_mobile_number as phone')
                         ->where('area_id' , $area_id)
                         ->where('customer_status' , 1)
                         ->orderBy('customer_name_english')
