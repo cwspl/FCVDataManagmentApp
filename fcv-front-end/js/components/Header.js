@@ -103,7 +103,6 @@ const styles = theme => ({
 });
 
 function SearchAppBar(props) {
-  console.log(props);
   const { classes } = props;
   const [menuAnchor, setMenuAnchor] = React.useState(null);
   const [searchExpand, setSearchExpand] = React.useState(null);
@@ -142,7 +141,15 @@ function SearchAppBar(props) {
   const searchCustomers = (event) => {
     if(event.target.value.length > 2){
       setSearch(true)
-      setFilteredCustomers(allCustomers.slice(0).filter(customer => (customer.customer_name.includes(event.target.value) || customer.customer_name_english.includes(event.target.value))))
+      setFilteredCustomers(allCustomers.slice(0)
+      .sort(function(a, b) {
+          var nameA = a.customer_name_english.toUpperCase();
+          var nameB = b.customer_name_english.toUpperCase();
+          return (nameA < nameB) ? -1 : (nameA > nameB) ? 1 : 0;
+      }).filter(customer => (
+        customer.customer_name.includes(event.target.value) || 
+        customer.customer_name_english.includes(event.target.value))
+      ))
     } else {
       setSearch(false);
     }
@@ -162,16 +169,11 @@ function SearchAppBar(props) {
   function logout(){
       if(localStorage.getItem('loginSession')){
         localStorage.removeItem('loginSession');
-        let postRequest = {
-          'logout': true
-        };
+        let postData = new FormData();
+        postData.append('logout', true);
         fetch(props.authenticationBindingUrl, {
-            headers: {
-                'Content-type': 'application/x-www-form-urlencoded'
-            },
-            method: 'POST',
-            body: Object.keys(postRequest).map(key => encodeURIComponent(key) + 
-            '=' + encodeURIComponent(postRequest[key])).join('&')
+          method: 'POST',
+          body: postData,
         })
         .then(function(response) { return response.json(); })
         .then(function(data) {
@@ -205,6 +207,7 @@ function SearchAppBar(props) {
               aria-owns={search ? 'customer-search' : undefined}
               aria-haspopup="true"
               onChange={searchCustomers}
+              onBlur={() => { setSearchExpand(false); }}
               onFocus={() => { setSearchExpand(true); }}
               placeholder="Search Customers"
               classes={{
