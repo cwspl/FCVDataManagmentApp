@@ -7,6 +7,7 @@ import HomePage from './pages/Home';
 
 import Dashboard from "./components/Dashboard";
 import AllArea from "./components/AllArea";
+import CustomerTable from "./components/Table";
 
 import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
@@ -83,6 +84,8 @@ class App extends React.Component{
                                         render={(props) => <Dashboard {...props} { ...this.state.shareProps }/> } />
                                     <Route exact path={'/all-area'} 
                                         render={(props) => <AllArea {...props} { ...this.state.shareProps }/> } />
+                                    <Route exact path={'/table/:areaId/:year'} 
+                                        render={(props) => <CustomerTable {...props} { ...this.state.shareProps }/> } />
                                 </HomePage>
                             </Router>
                         })
