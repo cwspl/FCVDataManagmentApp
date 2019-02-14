@@ -311,7 +311,7 @@ function CustomerTable(props) {
                                                     color: 'blue',
                                                     backgroundColor : cellBackground,
                                                 }}>
-                                                    {(pay[0] == null) ? '-' : pay[0]}
+                                                    {(pay[1] == null) ? '-' : pay[1]}
                                                 </TableCell>
                                             </React.Fragment>
                                         )
