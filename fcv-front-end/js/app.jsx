@@ -4,7 +4,6 @@ import { HashRouter as Router, Route } from "react-router-dom";
 
 import LoginForm from './pages/Login';
 import HomePage from './pages/Home';
-
 import Dashboard from "./components/Dashboard";
 import AllArea from "./components/AllArea";
 import CustomerTable from "./components/Table";

@@ -2,7 +2,7 @@
 import PropTypes from 'prop-types';
 
 import withStyles from '@material-ui/core/styles/withStyles';
-
+import TableAction from './TableAction'
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Typography from '@material-ui/core/Typography';
 import Table from '@material-ui/core/Table';
@@ -26,6 +26,7 @@ import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
 import TableFooter from '@material-ui/core/TableFooter';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
+import classNames from 'classnames';
 
 const styles = theme => ({
     root: {
@@ -56,8 +57,8 @@ const styles = theme => ({
     evenBackground: {
         backgroundColor: 'rgba(200,200,200,.2)',
     },
-    selectedRow:{
-        border: '2px solid '+theme.palette.primary.main,
+    selectedCell:{
+        outline: '2px solid '+theme.palette.primary.light,
     },
     tableOption:{
         display: 'flex', 
@@ -81,6 +82,7 @@ const styles = theme => ({
         padding: '5px',
         textAlign: 'center',
         minWidth: '35px',
+        borderLeft : ' 1px solid #ddd', 
     }
 });
   
@@ -97,15 +99,20 @@ function CustomerTable(props) {
         'all' : false,
         'selectedId' : []
     });
+    const [selectedCell, setSelectedCell ] = React.useState({
+        'customerData' : [],
+        'cellType' : '',
+        'cellMonth' : '',
+    });
     
     const [anchorTableRowMenu, setAnchorTableRowMenu] = React.useState(null);
     const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [rowsPage, setRowsPage] = React.useState(0);
     
-    function openTableRowMenu(event){
+    const openTableRowMenu = (event) => {
         setAnchorTableRowMenu(event.currentTarget);
     }
-    function closeTableRowMenu() {
+    const closeTableRowMenu = () => {
         setAnchorTableRowMenu(null);
     }
     const changeTableRow = (event) =>{
@@ -140,7 +147,10 @@ function CustomerTable(props) {
             if(data.responseCode == 200){
                 setAreas(data.response.areas);
                 setAllCustomers(
-                    data.response.areas.map(area => { return area.customers }).flat()
+                    data.response.areas.map(area => { 
+                        return area.customers.map(customer => 
+                            ({...customer, area: area.area_name}))
+                    }).flat()
                     .sort(function(a, b) {
                         var nameA = a.name_english.toUpperCase();
                         var nameB = b.name_english.toUpperCase();
@@ -148,7 +158,10 @@ function CustomerTable(props) {
                     })
                 );
                 setFilteredCustomers(
-                    data.response.areas.map(area => { return area.customers }).flat()
+                    data.response.areas.map(area => { 
+                        return area.customers.map(customer => 
+                            ({...customer, area: area.area_name}))
+                    }).flat()
                     .sort(function(a, b) {
                         var nameA = a.name_english.toUpperCase();
                         var nameB = b.name_english.toUpperCase();
@@ -233,7 +246,7 @@ function CustomerTable(props) {
                             let cellBackground = `rgba(
                                     ${  (customer.customer_payments[props.match.params.year].status == "under_pay") 
                                         ? '255, 210, 210, ' : '210, 255, 210, '}
-                                    ${(activeCustomer == customer.customer_id) ? '1' :(customer_index%2!=0) ? '0.25' : '.5'}
+                                    ${(activeCustomer == customer.customer_id) ? '.8' :(customer_index%2!=0) ? '0.25' : '.5'}
                                 )`;
                             return (
                             <TableRow 
@@ -245,21 +258,64 @@ function CustomerTable(props) {
                                         checked={(selectedCustomers.all) ? true : selectedCustomers.selectedId.includes(customer.customer_id) }/>
                                 </TableCell>
                                 <TableCell
-                                    style={{minWidth: 130, padding: '0px'}} className={(customer_index%2!=0) ? '': classes.evenBackground}>{customer.name}</TableCell>
+                                    onClick={() => setSelectedCell({...selectedCell, customerData: customer, cellType: 'name' })}
+                                    style={{minWidth: 130, padding: '10px'}} className={
+                                        classNames({
+                                            [classes.evenBackground]: (customer_index%2==0),
+                                            [classes.selectedCell] : (selectedCell.customerData.customer_id == customer.customer_id) && (selectedCell.cellType == 'name')
+                                        }) }>{customer.name}</TableCell>
                                 {
                                     Object.keys(customer.customer_payments[props.match.params.year].months)
                                     .map(function(key) {
                                         let pay = customer.customer_payments[props.match.params.year].months;
                                         return [pay[key].charge, pay[key].paid];
-                                    }).flat()
+                                    })
                                     .map(function(pay, pay_index) {
                                         return (
-                                        <TableCell className={classes.cell} key={pay_index} style={{
-                                            color: (pay_index%2==0) ? 'red': 'blue',
-                                            borderLeft : ' 1px solid #ddd', 
-                                            backgroundColor : cellBackground,
-                                        }}>{(pay == null) ? '-' : pay}</TableCell>
-                                    )})
+                                            <React.Fragment key={pay_index}>
+                                                <TableCell 
+                                                onClick={() => setSelectedCell({...selectedCell, 
+                                                    customerData: customer, 
+                                                    cellType: 'charge',
+                                                    cellMonth: pay_index+1,
+                                                })}
+                                                className={classNames({
+                                                    [classes.cell]:true,
+                                                    [classes.selectedCell]: (
+                                                        selectedCell.cellMonth == pay_index+1 && 
+                                                        selectedCell.customerData.customer_id == customer.customer_id && 
+                                                        selectedCell.cellType == 'charge'
+                                                    )
+                                                })}
+                                                style={{
+                                                    color: 'red',
+                                                    backgroundColor : cellBackground,
+                                                }}>
+                                                    {(pay[0] == null) ? '-' : pay[0]}
+                                                </TableCell>
+                                                <TableCell 
+                                                onClick={() => setSelectedCell({...selectedCell, 
+                                                    customerData: customer, 
+                                                    cellType: 'paid',
+                                                    cellMonth: pay_index+1,
+                                                })}
+                                                className={classNames({
+                                                    [classes.cell]:true,
+                                                    [classes.selectedCell]: (
+                                                        selectedCell.cellMonth == pay_index+1 && 
+                                                        selectedCell.customerData.customer_id == customer.customer_id && 
+                                                        selectedCell.cellType == 'paid'
+                                                    )
+                                                })}
+                                                style={{
+                                                    color: 'blue',
+                                                    backgroundColor : cellBackground,
+                                                }}>
+                                                    {(pay[0] == null) ? '-' : pay[0]}
+                                                </TableCell>
+                                            </React.Fragment>
+                                        )
+                                    })
                                 }
                             </TableRow>
                         )})
@@ -300,6 +356,7 @@ function CustomerTable(props) {
                     </TableFooter>
                 </Table>
             </Paper>
+            <TableAction {...selectedCell}/>
         </div>
     );
 }
