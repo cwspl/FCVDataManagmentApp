@@ -12,7 +12,7 @@ import Typography from '@material-ui/core/Typography';
 import TextField from '@material-ui/core/TextField';
 import IconButton from '@material-ui/core/IconButton';
 import InputAdornment from '@material-ui/core/InputAdornment';
-import LinearProgress from '@material-ui/core/LinearProgress';
+import Loading from './Loading';
 import Switch from '@material-ui/core/Switch';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -34,9 +34,6 @@ const styles = theme => ({
         justifyContent: 'center',
         flexDirection: 'column',
         maxWidth: theme.breakpoints.values.sm
-    },
-    progressBar: {
-        backgroundColor: theme.palette.secondary.main
     },
     extendedIcon: {
         marginRight: theme.spacing.unit,
@@ -118,7 +115,7 @@ function AllArea(props) {
                         ),
                     }}
                 />
-                <LinearProgress className={classes.progressBar} style={{ display : loading ? 'block' : 'none'}}/>
+                <Loading show={loading}/>
                 <FormControlLabel
                     control={
                         <Switch

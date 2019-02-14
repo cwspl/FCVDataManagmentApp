@@ -2,18 +2,24 @@ const webpack = require("webpack");
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 const devMode = process.env.NODE_ENV !== 'production'
 
-var DIST_DIR = path.resolve(__dirname, "dist");
-var SRC_DIR = path.resolve(__dirname, "js");
+var DIST = "./dist/";
+var SRC = "./js/";
+
+var DIST_DIR = path.resolve(__dirname, DIST);
+var SRC_DIR = path.resolve(__dirname, SRC);
  
 module.exports = {
     entry: ["@babel/polyfill", './js/app.jsx'],
     output: {
         path: DIST_DIR,
-        filename: "script.js",
-        publicPath: ""
+        filename: "js/[hash].main.js",
+        chunkFilename: "js/[hash][name].bundle.js",
+        publicPath: DIST
     },
     module: {
         rules: [
@@ -23,7 +29,7 @@ module.exports = {
                 loaders: "babel-loader",
                 query: {
                     presets: [ '@babel/preset-env', '@babel/react' ],
-                    plugins: ['@babel/plugin-transform-runtime']
+                    plugins: ['@babel/plugin-transform-runtime', '@babel/plugin-syntax-dynamic-import']
                 }
             },
             {
@@ -36,7 +42,6 @@ module.exports = {
             },
         ]
     },
-    // devtool: 'source-map',
     optimization: {
         minimizer: [new UglifyJsPlugin({
             uglifyOptions: {
@@ -47,20 +52,28 @@ module.exports = {
           })],
     },
     
-    // optimization: {
-    //     splitChunks: {
-    //         chunks: 'all'
-    //     }
-    // },
     plugins: [
+        new CleanWebpackPlugin(['dist']),
         new MiniCssExtractPlugin({
-            filename: "style.css"
+            filename: "css/[hash].css"
         }),
         new webpack.optimize.ModuleConcatenationPlugin(),
         new webpack.optimize.OccurrenceOrderPlugin(),
         new webpack.HotModuleReplacementPlugin(),
         new webpack.ProvidePlugin({
             'React':     'react',
+        }),
+        new HtmlWebpackPlugin({
+            hash: true,
+            minify: true,
+            title: 'FCV App',
+            filename: './index.html'
+        }),
+        new HtmlWebpackPlugin({
+            hash: true,
+            minify: true,
+            title: 'FCV App',
+            filename: './../index.html'
         }),
     ],
     mode : devMode ? 'development' : 'production'

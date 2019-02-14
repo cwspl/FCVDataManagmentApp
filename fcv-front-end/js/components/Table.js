@@ -2,8 +2,8 @@
 import PropTypes from 'prop-types';
 
 import withStyles from '@material-ui/core/styles/withStyles';
-import TableAction from './TableAction'
-import LinearProgress from '@material-ui/core/LinearProgress';
+const TableAction = React.lazy(() => import("./TableAction"));
+import Loading from './Loading';
 import Typography from '@material-ui/core/Typography';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -50,9 +50,6 @@ const styles = theme => ({
     tableBody: {
         height: '80vh',
         overflowY: 'auto',
-    },
-    progressBar: {
-        backgroundColor: theme.palette.secondary.main
     },
     evenBackground: {
         backgroundColor: 'rgba(200,200,200,.2)',
@@ -188,7 +185,7 @@ function CustomerTable(props) {
         setRowsPage(0);
     }
     return (
-        <div>
+        <React.Suspense fallback={<Loading show={true}/>}>
             <Typography className={classes.margin} component="h2" variant="subtitle1" align="center" gutterBottom>
                 Customers of {(props.match.params.areaId == "all") ? "all" : areas.map(area => { return area.area_name }).join(' , ') }
             </Typography>
@@ -213,7 +210,7 @@ function CustomerTable(props) {
                     }}
                 />
             </div>
-            <LinearProgress className={classes.progressBar} style={{ display : loading ? 'block' : 'none'}}/>
+            <Loading show={loading}/>
             <Paper className={classes.root}>
                 <Table className={classes.table}>
                     <TableHead>
@@ -357,7 +354,7 @@ function CustomerTable(props) {
                 </Table>
             </Paper>
             <TableAction {...selectedCell}/>
-        </div>
+        </React.Suspense>
     );
 }
 
