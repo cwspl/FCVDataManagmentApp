@@ -10,14 +10,22 @@ import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import TableFooter from '@material-ui/core/TableFooter';
 import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import TextField from '@material-ui/core/TextField';
 import IconButton from '@material-ui/core/IconButton';
+import Button from '@material-ui/core/Button';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import SearchIcon from '@material-ui/icons/Search';
+import FirstPageIcon from '@material-ui/icons/FirstPage';
+import LastPageIcon from '@material-ui/icons/LastPage';
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
+import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import ArrowDropDown from '@material-ui/icons/ArrowDropDown';
+import TableFooter from '@material-ui/core/TableFooter';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 
 const styles = theme => ({
     root: {
@@ -26,7 +34,6 @@ const styles = theme => ({
         maxWidth: theme.breakpoints.values.md,
         marginTop: theme.spacing.unit * 2,
         margin: 'auto',
-        height: '70vh',
         overflowX: 'auto',
     },
     searchCustomer: { 
@@ -52,6 +59,15 @@ const styles = theme => ({
     selectedRow:{
         border: '2px solid '+theme.palette.primary.main,
     },
+    tableOption:{
+        display: 'flex', 
+        flexWarp: 'wrap',
+        alignItems: 'center',
+        padding: '20px 40px',
+        margin: 'auto',
+        maxWidth: theme.breakpoints.values.md,
+        justifyContent: 'space-evenly'
+    },
     sticky: {
         backgroundColor: '#FFFFFF',
         boxShadow: '0px 1px 0px 0px #ddd',
@@ -64,7 +80,7 @@ const styles = theme => ({
     cell:{
         padding: '5px',
         textAlign: 'center',
-        minWidth: '50px',
+        minWidth: '35px',
     }
 });
   
@@ -81,6 +97,21 @@ function CustomerTable(props) {
         'all' : false,
         'selectedId' : []
     });
+    
+    const [anchorTableRowMenu, setAnchorTableRowMenu] = React.useState(null);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [rowsPage, setRowsPage] = React.useState(0);
+    
+    function openTableRowMenu(event){
+        setAnchorTableRowMenu(event.currentTarget);
+    }
+    function closeTableRowMenu() {
+        setAnchorTableRowMenu(null);
+    }
+    const changeTableRow = (event) =>{
+        setRowsPerPage(event.currentTarget.innerText);
+        closeTableRowMenu();
+    }
     const handleSelectedCustomer = (id, state) => {
         if(id == 'all'){
             setSelectedCustomer({ ...selectedCustomers, [id]: state });
@@ -141,6 +172,7 @@ function CustomerTable(props) {
             customer.phone.includes(event.target.value) ||
             customer.account_numbers.map(account_n => (account_n.number)).join(' ').includes(event.target.value)
         )))
+        setRowsPage(0);
     }
     return (
         <div>
@@ -196,7 +228,7 @@ function CustomerTable(props) {
                     </TableHead>
                     <TableBody className={classes.tableBody}>
                     {
-                        filteredCustomers
+                        filteredCustomers.slice(rowsPerPage*rowsPage, rowsPerPage*(rowsPage+1))
                         .map(function(customer, customer_index) {
                             let cellBackground = `rgba(
                                     ${  (customer.customer_payments[props.match.params.year].status == "under_pay") 
@@ -235,6 +267,35 @@ function CustomerTable(props) {
                     </TableBody>
                     <TableFooter>
                         <TableRow>
+                        <TableCell colSpan={13}>
+                            <div className={classes.tableOption}>
+                                <Typography>Customers Per Page</Typography>
+                                <Button
+                                    onClick={openTableRowMenu} 
+                                    aria-owns={anchorTableRowMenu ? 'tableRowMenu' : undefined}
+                                    variant="outlined" color="primary">
+                                    {rowsPerPage}  <ArrowDropDown/>
+                                </Button>
+                                <Menu id="tableRowMenu" anchorEl={anchorTableRowMenu} open={Boolean(anchorTableRowMenu)} onClose={closeTableRowMenu}>
+                                    <MenuItem onClick={changeTableRow}>10</MenuItem>
+                                    <MenuItem onClick={changeTableRow}>20</MenuItem>
+                                    <MenuItem onClick={changeTableRow}>50</MenuItem>
+                                </Menu>
+                                <Typography>{(rowsPerPage*rowsPage)+1} - {(rowsPerPage*rowsPage)+filteredCustomers.slice(rowsPerPage*rowsPage, rowsPerPage*(rowsPage+1)).length} of {filteredCustomers.length}</Typography>
+                                <IconButton disabled={(rowsPage==0)} onClick={() => setRowsPage(0)}>
+                                    <FirstPageIcon/>
+                                </IconButton>
+                                <IconButton disabled={(rowsPage==0)} onClick={() => setRowsPage(rowsPage-1)}>
+                                    <ChevronLeftIcon/>
+                                </IconButton>
+                                <IconButton disabled={(Math.floor(filteredCustomers.length/rowsPerPage)==rowsPage)} onClick={() => setRowsPage(rowsPage+1)}>
+                                    <ChevronRightIcon/>
+                                </IconButton>
+                                <IconButton disabled={(Math.floor(filteredCustomers.length/rowsPerPage)==rowsPage)} onClick={() => setRowsPage(Math.floor(filteredCustomers.length/rowsPerPage))}>
+                                    <LastPageIcon/>
+                                </IconButton>
+                            </div>
+                        </TableCell>
                         </TableRow>
                     </TableFooter>
                 </Table>
