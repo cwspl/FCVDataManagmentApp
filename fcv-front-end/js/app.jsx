@@ -1,19 +1,23 @@
 import {render} from "react-dom";
-
 import { HashRouter as Router, Route } from "react-router-dom";
 
 import LoginForm from './pages/Login';
 import HomePage from './pages/Home';
 
-import Dashboard from "./components/Dashboard";
-import AllArea from "./components/AllArea";
+const Dashboard = React.lazy(() => import("./components/Dashboard"));
+const AllArea = React.lazy(() => import("./components/AllArea"));
+const CustomerTable = React.lazy(() => import("./components/Table"));
 
+import 'reset-css';
 import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
 import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import indigo from '@material-ui/core/colors/indigo';
 import yellow from '@material-ui/core/colors/yellow';
 import green from '@material-ui/core/colors/green';
 import red from '@material-ui/core/colors/red';
+
+import Loading from './components/Loading';
+
 
 const theme = createMuiTheme({
     palette: {
@@ -79,10 +83,14 @@ class App extends React.Component{
                         this.setState({ mainPage:
                             <Router>
                                 <HomePage { ...this.state.shareProps } redirectTo={history.push}>
-                                    <Route exact path={'/'} 
-                                        render={(props) => <Dashboard {...props} { ...this.state.shareProps }/> } />
-                                    <Route exact path={'/all-area'} 
-                                        render={(props) => <AllArea {...props} { ...this.state.shareProps }/> } />
+                                    <React.Suspense fallback={<Loading show={true}/>}>
+                                        <Route exact path={'/'} 
+                                            render={(props) => <Dashboard {...props} { ...this.state.shareProps }/> } />
+                                        <Route exact path={'/all-area'} 
+                                            render={(props) => <AllArea {...props} { ...this.state.shareProps }/> } />
+                                        <Route exact path={'/table/:areaId/:year'} 
+                                            render={(props) => <CustomerTable {...props} { ...this.state.shareProps }/> } />
+                                    </React.Suspense>
                                 </HomePage>
                             </Router>
                         })
@@ -96,10 +104,13 @@ class App extends React.Component{
     }
     render() {
         return(
-            <div>
+            <React.Fragment>
                 {this.state.mainPage}
-            </div>
+            </React.Fragment>
         ) 
     }
 }
-render(<MuiThemeProvider theme={theme}> <App /> </MuiThemeProvider>, document.querySelector('#app'));
+
+let AppContainer = document.createElement("div");
+document.body.appendChild(AppContainer);
+render(<MuiThemeProvider theme={theme}> <App /> </MuiThemeProvider>, AppContainer);
