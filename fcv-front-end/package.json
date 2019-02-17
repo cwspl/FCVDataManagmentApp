@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm run build",
-    "build": "webpack -p && webpack --watch",
+    "start": "npm run watch",
+    "build": "webpack -p",
     "watch": "webpack --watch",
     "build:prod": "webpack -p",
     "stats": "webpack --profile --json > stats.json && webpack-bundle-analyzer stats.json dist"

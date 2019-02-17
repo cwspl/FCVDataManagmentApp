@@ -28,7 +28,19 @@ module.exports = {
                 include: SRC_DIR,
                 loaders: "babel-loader",
                 query: {
-                    presets: [ '@babel/preset-env', '@babel/react' ],
+                    presets: [ 
+                        ['@babel/env',
+                        {
+                            "useBuiltIns": "entry",
+                            "targets": {
+                                "browsers": [
+                                    ">1%",
+                                    "not ie 11",
+                                    "not op_mini all",
+                                ]
+                            }
+                        }]
+                    , '@babel/react' ],
                     plugins: ['@babel/plugin-transform-runtime', '@babel/plugin-syntax-dynamic-import']
                 }
             },
