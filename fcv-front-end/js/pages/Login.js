@@ -123,46 +123,54 @@ function LoginForm(props) {
         [classes.buttonSuccess]: values.success,
         [classes.buttonError]: values.error,
     });
-    function login() {
+    function login(event) {
+        event.preventDefault();
         if (!values.loading) {
-            handleChangeValue('error',false);
-            handleChangeValue('success',false);
-            handleChangeValue('loading',true);
-            let postRequest = {
-                "requestURL": requestURL+"agent/login",
-                "login": true,
-                "agent_email_address": values.email,
-	            "agent_password": values.password
-            };
+            setValues({...values, 
+                error: false, 
+                success: false, 
+                loading: true 
+            });
+            let postData = new FormData();
+            postData.append("requestURL", requestURL+"agent/login");
+            postData.append("login", true);
+            postData.append("agent_email_address", values.email);
+            postData.append("agent_password", values.password);
             fetch('includes/authenticationBinder.php', {
-                headers: {
-                    'Content-type': 'application/x-www-form-urlencoded'
-                },
                 method: 'POST',
-                body: Object.keys(postRequest).map(key => encodeURIComponent(key) + 
-                '=' + encodeURIComponent(postRequest[key])).join('&')
-                })
+                body: postData })
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
-                    handleChangeValue('loading',false);
                     if(data.login == 'success'){
-                        handleChangeValue('success',true);
+                        setValues({...values,
+                            error: false, 
+                            success: true, 
+                            loading: false 
+                        });
                         localStorage.setItem('loginSession', data.token);
                         props.AppRefresh();
                     } else {
-                        handleChangeValue('error',true);
-                        handleChangeValue('errorMessage',data.error);
+                        setValues({...values,
+                            errorMessage: data.error, 
+                            error: true, 
+                            success: false, 
+                            loading: false 
+                        });
                     }
                 }).catch(function() {
-                    handleChangeValue('error',true);
-                    handleChangeValue('loading',false);
-                    handleChangeValue('errorMessage',"Connection Failed");
+                    setValues({...values,
+                        errorMessage: "Connection Failed", 
+                        error: true, 
+                        success: false, 
+                        loading: false 
+                    });
                 });
         }
+        return false;
     }
     return (
         <div className={classes.background}>
-        <Card className={classes.form}>
+        <Card className={classes.form} component="form" onSubmit={login}>
             <CardContent className={classes.flexCenter}>
                 <img src="images/fcv_main_logo.svg" width='200'/>
                 <Typography component="h2"  className={classes.formText} gutterBottom>
@@ -208,8 +216,12 @@ function LoginForm(props) {
                     </CardContent>
                 </Card>
                 <div className={classes.loginButton}>
-                    <Fab color="secondary" className={buttonClassname} onClick={login} disabled={(!isEmail(values.email) || !isLength(values.email, {min : 5, max : 255}) || !isLength(values.password, {min : 3, max : 255}))}>
-                        {values.error ? <RefreshIcon /> : values.success ? <CheckIcon /> : <ArrowForwardIos/> }
+                    <Fab 
+                        type="submit" 
+                        color="secondary" 
+                        className={buttonClassname} 
+                        disabled={(!isEmail(values.email) || !isLength(values.email, {min : 5, max : 255}) || !isLength(values.password, {min : 3, max : 255}))}>
+                        {values.error ? <RefreshIcon /> : (values.success ? <CheckIcon /> : <ArrowForwardIos/>) }
                     </Fab>
                     {values.loading && <CircularProgress size={68} className={classes.fabProgress} />}
                 </div>
