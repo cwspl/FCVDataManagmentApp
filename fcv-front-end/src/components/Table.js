@@ -67,8 +67,8 @@ function CustomerTable(props) {
                         ({...customer, area: area.area_id}))
                 }).flat()
                 .sort(function(a, b) {
-                    var nameA = a.name_english.toUpperCase();
-                    var nameB = b.name_english.toUpperCase();
+                    var nameA = a.name_english.replace(/[^A-Za-z]/g, '').trim().toUpperCase();
+                    var nameB = b.name_english.replace(/[^A-Za-z]/g, '').trim().toUpperCase();
                     return (nameA < nameB) ? -1 : (nameA > nameB) ? 1 : 0;
                 });
             setAllCustomers(shortTable);

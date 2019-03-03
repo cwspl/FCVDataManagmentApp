@@ -78,7 +78,7 @@ function Header(props) {
     <div className={classes.root}>
       <AppBar position="fixed">
         <Toolbar>
-          <IconButton className={classes.menuButton} color="inherit" aria-label="Open drawer">
+          <IconButton className={classes.menuButton} color="inherit" onClick={props.toggleMenu}>
             <MenuIcon />
           </IconButton>
           <div className={classes.grow} />
