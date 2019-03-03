@@ -1,92 +1,67 @@
 const webpack = require("webpack");
-const path = require("path");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
-
+const HtmlWebPackPlugin = require('html-webpack-plugin');
 const devMode = process.env.NODE_ENV !== 'production'
 
-var DIST = "./dist/";
-var SRC = "./js/";
-
-var DIST_DIR = path.resolve(__dirname, DIST);
-var SRC_DIR = path.resolve(__dirname, SRC);
- 
-module.exports = {
-    entry: ["@babel/polyfill", './js/app.jsx'],
+module.exports ={
+    entry: ['@babel/polyfill', './src/index.js'],
     output: {
-        path: DIST_DIR,
-        filename: "js/[hash].main.js",
-        chunkFilename: "js/[hash][name].bundle.js",
-        publicPath: DIST
+        filename: 'js/[name].js',
+        chunkFilename: 'js/[name].bundle.js',
     },
     module: {
         rules: [
             {
-                test: /\.(js|jsx)?/,
-                include: SRC_DIR,
-                loaders: "babel-loader",
-                query: {
-                    presets: [ 
-                        ['@babel/env',
-                        {
-                            "useBuiltIns": "entry",
-                            "targets": {
-                                "browsers": [
-                                    ">1%",
-                                    "not ie 11",
-                                    "not op_mini all",
-                                ]
-                            }
-                        }]
-                    , '@babel/react' ],
-                    plugins: ['@babel/plugin-transform-runtime', '@babel/plugin-syntax-dynamic-import']
-                }
+                test: /\.js?/,
+                exclude: /node_modules/,
+                loader: 'babel-loader'
             },
             {
-                test: /\.s?[ac]ss$/,
+                test: /\.(css|scss)$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
-                    { loader: 'css-loader', options: { url: false } },
-                    { loader: 'sass-loader'}
-                ],
+                    {
+                        loader: 'style-loader'
+                    },
+                    {
+                        loader: 'css-loader',
+                        query: { modules: true }
+                    },
+                    {
+                        loader: 'sass-loader',
+                        query: { modules: true }
+                    }
+                ]
             },
+            {
+                test: /\.(png|svg|jpg)$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        name: 'images/[name].[ext]',
+                    }}
+                ]
+            },
+            {
+                test: /\.(php)$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        name: 'includes/[name].[ext]',
+                    }}
+                ]
+            }
         ]
     },
-    optimization: {
-        minimizer: [new UglifyJsPlugin({
-            uglifyOptions: {
-              output: {
-                comments: false
-              }
-            }
-          })],
-    },
-    
-    plugins: [
-        new CleanWebpackPlugin(['dist']),
-        new MiniCssExtractPlugin({
-            filename: "css/[hash].css"
+    plugins:[
+        new HtmlWebPackPlugin({
+            hash: true,
+            minify: true,
+            appMountId: 'app',
+            favicon: './src/assets/favicon.png',
+            title: 'FCV App'
         }),
-        new webpack.optimize.ModuleConcatenationPlugin(),
-        new webpack.optimize.OccurrenceOrderPlugin(),
-        new webpack.HotModuleReplacementPlugin(),
         new webpack.ProvidePlugin({
             'React':     'react',
         }),
-        new HtmlWebpackPlugin({
-            hash: true,
-            minify: true,
-            title: 'FCV App',
-            filename: './index.html'
-        }),
-        new HtmlWebpackPlugin({
-            hash: true,
-            minify: true,
-            title: 'FCV App',
-            filename: './../index.html'
-        }),
     ],
     mode : devMode ? 'development' : 'production'
-};
+}
